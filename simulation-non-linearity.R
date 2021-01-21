@@ -488,7 +488,7 @@ simulate_and_calc = function(load_type = "load", injury, coefs, rep = 1){
 }
 
 # for a test, run
-simulate_and_calc(load_type = "acwr", injury = injury_j, coefs = coefs_j_acwr)
+# simulate_and_calc(load_type = "acwr", injury = injury_j, coefs = coefs_j_acwr)
 
 #-----------------for loop running simulations
 n_sim = 1900 # set to the number of permutations. 
