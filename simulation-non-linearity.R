@@ -22,6 +22,8 @@ library(DescTools) # for brier score and other model fits
 # data is available in the GitHub repository. 
 # includes only the U19 load and ACWR values, nothing else.
 # if data are loaded correctly, running the rest of the script should reproduce results in the study
+# Here, we assume working directory is set to "source file location", otherwise, the path must we added
+# into the loading of the data
 d_load = readRDS("d_load_selected.rds")
 d_acwr = readRDS("d_acwr_selected.rds")
 
@@ -486,7 +488,7 @@ simulate_and_calc = function(load_type = "load", injury, coefs, rep = 1){
 }
 
 # for a test, run
-#simulate_and_calc(load_type = "acwr", injury = injury_j, coefs = coefs_j_acwr)
+simulate_and_calc(load_type = "acwr", injury = injury_j, coefs = coefs_j_acwr)
 
 #-----------------for loop running simulations
 n_sim = 1900 # set to the number of permutations. 
