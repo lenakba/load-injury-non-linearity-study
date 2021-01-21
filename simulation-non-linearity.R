@@ -1,14 +1,15 @@
 
+# all functions used to perform the simulations in the study is in this script
+# if data are loaded correctly, running the rest of the script should reproduce results in the study
+
 # so we don't have to deal with scientific notations
-# and strings aren't automaticcaly read as factors
+# and strings aren't automatically read as factors
 options(scipen = 17, 
         stringsAsFactors = FALSE)
 
 # Packages
 library(tidyverse) # for everything
 library(rlang) # for tidy evaluation
-library(ostrc) 
-library(lmisc) # ggplot2-themes, NiH colors
 library(rms) # for restriced cubic splines
 library(slider) # calculations on sliding windows
 library(mfp) # fractional polynomials
@@ -21,7 +22,6 @@ library(DescTools) # for brier score and other model fits
 
 # data is available in the GitHub repository. 
 # includes only the U19 load and ACWR values, nothing else.
-# if data are loaded correctly, running the rest of the script should reproduce results in the study
 # Here, we assume working directory is set to "source file location", otherwise, the path must we added
 # into the loading of the data
 d_load = readRDS("d_load_selected.rds")
