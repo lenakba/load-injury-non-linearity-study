@@ -214,8 +214,8 @@ simulate_injury(d_load, load = "load",  sim = TRUE, clsize = 3*clsize)
 
 #------------------------------------Objects to base predictions on
 # example datasets used for predictions
-d_acwr_example = l_acwr[[2]] %>% mutate(p_id = "1")
-d_load_example = l_load[[2]] %>% mutate(p_id = "1")
+d_acwr_example = l_acwr[[2]] %>% mutate(p_id = "1665")
+d_load_example = l_load[[2]] %>% mutate(p_id = "1665")
 
 p_id_list = l_acwr %>% map(. %>% distinct(p_id) %>% slice(1) %>% pull())
 l_acwr_example = l_acwr %>% map(. %>% dplyr::select(p_id, label, starts_with("load"), starts_with("coefs"))) %>% map2(.x = ., .y = p_id_list, ~.x %>% mutate(p_id = .y))
