@@ -424,14 +424,15 @@ plot_sim_shapes = function(d, d_coefs = d_coefs_load %>% filter(label == "n = 84
   coefs = enexpr(coefs)
   
   text_size = 14
+  green_color = "#346702"
   
   ggplot(data = d, aes(x = load)) +
     facet_wrap(~method, ncol = 4) + 
     geom_line(data = d_coefs, aes(y = !!coefs, color = "True Risk"), size = 0.5) +
-    geom_ribbon(aes(min = lower, max = upper), alpha = 0.3, fill = nih_distinct[3]) + 
+    geom_ribbon(aes(min = lower, max = upper), alpha = 0.3, fill = green_color) + 
     geom_line(aes(y = yhat, color = "Estimation"), size = 0.5) + 
     xlab(x_label) + ylab('Probability\nof Injury') + 
-    scale_color_manual(values = c("Green", "Black")) + 
+    scale_color_manual(values = c(green_color, "Black")) + 
     theme(legend.title = element_blank(), legend.position = "bottom",
           axis.text = element_text(size=text_size),
           strip.text.x = element_text(size = text_size),

@@ -621,8 +621,6 @@ d_preds_load_strom_linear = predict_on_imputed(fit_load_strom_linear, d_sample_l
 d_preds_acwr_7_21_strom_linear = predict_on_imputed(fit_acwr_7_21_strom_linear, d_sample_acwr_strom)  %>% mutate(load_type = "ACWR 7:21")
 d_preds_acwr_mp_strom_linear = predict_on_imputed(fit_acwr_mp_strom_linear, d_sample_acwr_strom) %>% mutate(load_type = "ACWR 1:3 micro cycles")
 
-
-
 # combine fotball and handball datasets
 d_preds_u19_linear = bind_rows(d_preds_load_u19_linear, d_preds_acwr_7_21_u19_linear, d_preds_acwr_mp_u19_linear) %>% mutate(pop = "Football U19")
 d_preds_handball_linear = bind_rows(d_preds_load_handball_linear, d_preds_acwr_7_21_handball_linear, d_preds_acwr_mp_handball_linear) %>% mutate(pop = "Handball")
@@ -634,15 +632,18 @@ d_preds_injury0_handball_linear = bind_rows(d_preds_load_injury0_handball_linear
 d_preds_injury0_strom_linear = bind_rows(d_preds_load_injury0_strom_linear, d_preds_acwr_7_21_injury0_strom_linear) %>% mutate(pop = "Football\nStrømsgodset")
 d_preds_injury0_linear = bind_rows(d_preds_injury0_u19_linear, d_preds_injury0_handball_linear, d_preds_injury0_strom_linear)
 
+
+
 # examples of figures that can be made
 text_size = 18
+green_color = "#346702"
 d_preds_full = d_preds %>% filter(pop == "Football U19" & load_values <= 2000 | pop == "Handball" | pop == "Football\nStrømsgodset")
 d_preds_linear_full = d_preds_linear %>% filter(pop == "Football U19" & load_values <= 2000 | pop == "Handball" | pop == "Football\nStrømsgodset")
 ggplot(d_preds_full, aes(x = load_values, y = yhat)) +
   facet_wrap(vars(load_type, pop), scales = "free", ncol = 3) +
   geom_line(size = 1) + 
   geom_line(data = d_preds_linear_full, aes(x = load_values, y = yhat)) + 
-  geom_ribbon(aes(min = lower, max = upper), alpha = 0.25) +
+  geom_ribbon(aes(min = lower, max = upper), alpha = 0.25, fill = green_color) +
   ylab("Probability of injury\n1–4 days later or\nnext Micro Cycle") +
   xlab("Load value")  +
   scale_y_continuous(limits = c(0, 1.0)) +
@@ -658,7 +659,7 @@ ggplot(d_preds_injury0_full, aes(x = load_values, y = yhat)) +
   facet_wrap(vars(load_type, pop), scales = "free", ncol = 3) +
   geom_line(size = 1) + 
   geom_line(data = d_preds_injury0_linear_full, aes(x = load_values, y = yhat)) + 
-  geom_ribbon(aes(min = lower, max = upper), alpha = 0.25) +
+  geom_ribbon(aes(min = lower, max = upper), alpha = 0.25, fill = green_color) +
   ylab("Probability of injury\non same day") +
   xlab("Load value")  +
   scale_y_continuous(limits = c(0, 1.0))  +
