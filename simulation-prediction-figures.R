@@ -449,9 +449,10 @@ method_arrangement = methods %>% enframe() %>% mutate(arrangement = c(6, 7,5 ,1 
 d_preds_u = d_preds_u %>% mutate(method = factor(method, levels = method_arrangement$value))
 d_coefs_load = d_coefs_load %>% mutate(method = factor(method, levels = method_arrangement$value))
 
-png("u-shape-presentation.png", width = 12, height = 6, units="in", res=600)
+# to save the file, unquote png() and dev.off() commands
+#png("u-shape-presentation.png", width = 12, height = 6, units="in", res=600)
 plot_sim_shapes(d_preds_u %>% filter(label == "n = 8494"), coefs = coefs_u)
-dev.off()
+#dev.off()
 
 # For visualizing all shapes
 # U shape
