@@ -644,7 +644,7 @@ ggplot(d_preds_full, aes(x = load_values, y = yhat)) +
   geom_line(size = 1) + 
   geom_line(data = d_preds_linear_full, aes(x = load_values, y = yhat)) + 
   geom_ribbon(aes(min = lower, max = upper), alpha = 0.25, fill = green_color) +
-  ylab("Probability of injury\n1–4 days later or\nnext Micro Cycle") +
+  ylab("Probability of injury\Next 4 days or\nNext Microcycle") +
   xlab("Load value")  +
   scale_y_continuous(limits = c(0, 1.0)) +
   theme(axis.text = element_text(size=text_size),
@@ -668,3 +668,35 @@ ggplot(d_preds_injury0_full, aes(x = load_values, y = yhat)) +
         axis.title =  element_text(size=text_size),
         legend.position = "bottom",
         legend.title = element_blank())
+
+# Figure made for article
+d_preds_load_injury0_handball = d_preds_load_injury0_handball %>% mutate(injury = "(A) Current Day (N = 472)")
+d_preds_load_handball = d_preds_load_handball %>% mutate(injury = "(B) Next 4 Days (N = 1 136)")
+
+d_preds_load_injury0_handball_linear = d_preds_load_injury0_handball_linear %>% mutate(injury = "(A) Current Day (N = 472)")
+d_preds_load_handball_linear = d_preds_load_handball_linear %>% mutate(injury = "(B) Next 4 Days (N = 1 136)")
+
+d_preds_sig = bind_rows(d_preds_load_injury0_handball, d_preds_load_handball) 
+d_preds_sig_lin = bind_rows(d_preds_load_injury0_handball_linear, d_preds_load_handball_linear)
+
+# for bjsm green color
+bjsm_green = "#346702"
+text_size = 18
+# there are so few values to go on beyond 2000 that the confidence intervals are incredibly broad
+library(devEMF)
+emf("splines_handball_injury.emf", width = 12, height = 5)
+ggplot(d_preds_sig, aes(x = load_values, y = yhat)) +
+  facet_wrap(~injury, ncol = 2) +
+  geom_line(size = 1) + 
+  geom_line(data = d_preds_sig_lin, aes(x = load_values, y = yhat)) + 
+  geom_ribbon(aes(min = lower, max = upper), alpha = 0.25, fill = bjsm_green) +
+  theme_line() + 
+  ylab("Probability\nof Injury") +
+  xlab("sRPE (AU)")  +
+  scale_y_continuous(limits = c(0, 1.0)) +
+  theme(axis.text = element_text(size=text_size),
+        strip.text.x = element_text(size = text_size),
+        axis.title =  element_text(size=text_size),
+        legend.position = "bottom",
+        legend.title = element_blank())
+dev.off()
