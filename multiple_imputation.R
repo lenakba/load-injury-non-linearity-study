@@ -61,14 +61,14 @@ l_imputed_strom = l_imputed_strom %>% map(. %>% select(load, minutes, intensity)
 
 #------------------------------------------------------ validating imputation
 # check that the imputed values are similarly distributed to the imputed values
-imp_u19 = mice(d_u19, seed = 123)
-densityplot_u19 = densityplot(x=imp_u19, data = ~load + age)
+imp_u19 = mice(d_u19  %>% rename(sRPE = load, Age = age), seed = 123)
+densityplot_u19 = densityplot(x=imp_u19, data = ~sRPE + Age)
 
-imp_handball = mice(d_handball, seed = 123)
-densityplot_handball = densityplot(x=imp_handball, data = ~load + age)
+imp_handball = mice(d_handball  %>% rename(sRPE = load, Age = age), seed = 123)
+densityplot_handball = densityplot(x=imp_handball, data = ~sRPE + Age)
 
-imp_strom = mice(d_strom, seed = 123)
-densityplot_strom = densityplot(x=imp_strom, data = ~load)
+imp_strom = mice(d_strom  %>% rename(sRPE = load, Age = age), seed = 123)
+densityplot_strom = densityplot(x=imp_strom, data = ~sRPE)
 
 # you'll need the package ggarrange installed for this code
 # to recreate figures used in the study, one can run
