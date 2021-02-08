@@ -330,15 +330,15 @@ for(i in 1:length(nam)) {
 #The numerator Y (left) and the ratio Y/X (right) against the denominator X for four models (A–D). 
 # Only when a straight-line relationship between Y and X goes through the origin (model A) 
 
-d_acwr_measures = bind_rows(l_acwr_u19$`5` %>% mutate(data = "U19", type = "Days") %>% rename(chronic_load = chronic_ewma, acwr = acwr_7_21), 
-                            l_acwr_handball$`5` %>% mutate(data = "Handball", type = "Days") %>% rename(chronic_load = chronic_ewma, acwr = acwr_7_21),
-                            l_acwr_strom$`5` %>% mutate(data = "Premier", type = "Days") %>% rename(chronic_load = chronic_ewma, acwr = acwr_7_21),
+d_acwr_measures = bind_rows(l_acwr_u19$`5` %>% mutate(data = "Football U-19", type = "Daily") %>% rename(chronic_load = chronic_ewma, acwr = acwr_7_21), 
+                            l_acwr_handball$`5` %>% mutate(data = "Handball", type = "Daily") %>% rename(chronic_load = chronic_ewma, acwr = acwr_7_21),
+                            l_acwr_strom$`5` %>% mutate(data = "Football Elite", type = "Daily") %>% rename(chronic_load = chronic_ewma, acwr = acwr_7_21),
                             #l_acwr_u19_training_only$`5` %>% mutate(data = "U19", type = "Days (0 not included)") %>% rename(chronic_load = chronic_ewma, acwr = acwr_7_21), 
                             #l_acwr_handball_training_only$`5` %>% mutate(data = "Handball", type = "Days (0 not included)") %>% rename(chronic_load = chronic_ewma, acwr = acwr_7_21),
                             #l_acwr_strom_training_only$`5` %>% mutate(data = "Premier", type = "Days (0 not included)") %>% rename(chronic_load = chronic_ewma, acwr = acwr_7_21),
-                            l_acwr_mp_u19$`5` %>% mutate(data = "U19", type = "Micro Cycle"), 
-                            l_acwr_mp_handball$`5` %>% mutate(data = "Handball", type = "Micro Cycle"),
-                            l_acwr_mp_strom$`5` %>% mutate(data = "Premier", type = "Micro Cycle"))
+                            l_acwr_mp_u19$`5` %>% mutate(data = "Football U-19", type = "Microcycle"), 
+                            l_acwr_mp_handball$`5` %>% mutate(data = "Handball", type = "Microcycle"),
+                            l_acwr_mp_strom$`5` %>% mutate(data = "Football Elite", type = "Microcycle"))
 library(devEMF)
 devEMF::emf("acwr_ratio_assumption.emf", width = 8, height = 6)
 ggplot(d_acwr_measures, aes(x = chronic_load, y = acwr)) +
