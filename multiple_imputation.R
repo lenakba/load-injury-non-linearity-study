@@ -4,7 +4,9 @@
 # are only available as anonymised versions
 # where columns of background information etc. are removed
 # this information was used to impute the data used in the article
-# therefore, this script is mostly available for transperancy
+# therefore, this script is mostly available for transparency.
+#  the anonymised datasets are not in the GitHub repository, only available
+# as supplementary to the non-linearity study
 
 
 library(tidyverse) # for datareading, wrangling and handling
