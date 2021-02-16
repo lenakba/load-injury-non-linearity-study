@@ -7,12 +7,12 @@ options(scipen = 17,
         stringsAsFactors = FALSE)
 
 
-# loading imputed datasets
+# loading unimputed datasets
 # code is only for illustration
 folder_base = paste0("our\\data\\folder\\")
-d_u19 = read_csv(paste0(folder_base, "data_football_u19_anonymized.csv"))
-d_handball = read_csv(paste0(folder_base, "data_handball_anonymized.csv"))
-d_strom = read_csv(paste0(folder_base, "data_football_premierdiv_anonymized.csv"))
+d_u19 = read_csv(paste0(folder_base, "data_football_u19_anonymised.csv"))
+d_handball = read_csv(paste0(folder_base, "data_handball_anonymised.csv"))
+d_strom = read_csv(paste0(folder_base, "data_football_premierdiv_anonymised.csv"))
 
 #------------------------imputation
 

@@ -2,7 +2,7 @@
 # This script inlcudes everything performed in the real data
 # analysis of the non-linearity study
 # script is irrepreducible, as data could not be
-# made available in necessary format due to anonymization
+# made available in necessary format due to anonymisation
 # The script is uploaded for the sake of transparency.
 
 # Packages
