@@ -3,6 +3,7 @@
 # and calculate the mean and percentages of performance measures
 # should be able to reproduce results found in Table 1 and Table 2 in the article
 # And reproduce Figure 3
+# The csv files are available as supplementary to the article (i.e. you won't find them in the R GitHub repository)
 
 # so we don't have to deal with scientific notations
 # and strings aren't automaticcaly read as factors
