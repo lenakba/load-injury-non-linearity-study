@@ -333,9 +333,6 @@ for(i in 1:length(nam)) {
 d_acwr_measures = bind_rows(l_acwr_u19$`5` %>% mutate(data = "Football U-19", type = "Daily") %>% rename(chronic_load = chronic_ewma, acwr = acwr_7_21), 
                             l_acwr_handball$`5` %>% mutate(data = "Handball", type = "Daily") %>% rename(chronic_load = chronic_ewma, acwr = acwr_7_21),
                             l_acwr_strom$`5` %>% mutate(data = "Football Elite", type = "Daily") %>% rename(chronic_load = chronic_ewma, acwr = acwr_7_21),
-                            #l_acwr_u19_training_only$`5` %>% mutate(data = "U19", type = "Days (0 not included)") %>% rename(chronic_load = chronic_ewma, acwr = acwr_7_21), 
-                            #l_acwr_handball_training_only$`5` %>% mutate(data = "Handball", type = "Days (0 not included)") %>% rename(chronic_load = chronic_ewma, acwr = acwr_7_21),
-                            #l_acwr_strom_training_only$`5` %>% mutate(data = "Premier", type = "Days (0 not included)") %>% rename(chronic_load = chronic_ewma, acwr = acwr_7_21),
                             l_acwr_mp_u19$`5` %>% mutate(data = "Football U-19", type = "Microcycle"), 
                             l_acwr_mp_handball$`5` %>% mutate(data = "Handball", type = "Microcycle"),
                             l_acwr_mp_strom$`5` %>% mutate(data = "Football Elite", type = "Microcycle"))
