@@ -312,6 +312,7 @@ validation_stats = function(l_fit, injury, l_data){
 }
 
 # function for calculating coverage
+# function for calculating coverage
 coverage = function(d_preds, example_list, coefs, rep, cat = FALSE, load_type = "load", subjective = FALSE){
   coefs = enquo(coefs)
   rep = enquo(rep)
@@ -323,9 +324,11 @@ coverage = function(d_preds, example_list, coefs, rep, cat = FALSE, load_type = 
     } else {
       l_preds$data = l_preds$data %>% map(., ~continuous_cats(., load = load_type))      
     }
-    d_preds = unnest(l_preds, cols = data) %>% ungroup()
+    d_preds = unnest(l_preds, cols = data) %>% ungroup() %>% rename(load_fig = load) %>% arrange(desc(label), load_quarts_code, load_fig)
+  } else {
+    d_preds = d_preds %>% arrange(desc(label), load) 
   }
-  
+  d_preds = d_preds %>% rownames_to_column() 
   
   # make dataset with coefficients to compare
   d_collated_load = example_list %>% bind_rows()
@@ -334,14 +337,14 @@ coverage = function(d_preds, example_list, coefs, rep, cat = FALSE, load_type = 
   for(i in 1:length(methods)){
     l_example_labelled_load = map_at(l_example_labelled_load, i, ~mutate(., method = methods[i]))
   }
-  
   d_coefs_load = l_example_labelled_load[[1]]
-  d_coefs_load = d_coefs_load %>% dplyr::select(label, load, !!coefs, method, load_cat)  
   
   if(cat){
-    d_preds_coefs = d_preds %>% full_join(d_coefs_load, by = c("method", "label", "load_quarts_code" = "load_cat"))
+    d_coefs_load = d_coefs_load %>% dplyr::select(label, load, !!coefs, method, load_cat) %>% arrange(desc(label), load_cat, load) %>% rownames_to_column()
+    d_preds_coefs = d_preds %>% left_join(d_coefs_load, by = c("method", "label", "rowname", "load_quarts_code" = "load_cat"))
   } else {
-    d_preds_coefs = d_preds %>% full_join(d_coefs_load, by = c("method", "label", "load"))
+    d_coefs_load = d_coefs_load %>% dplyr::select(label, load, !!coefs, method) %>% arrange(desc(label), load) %>% rownames_to_column()
+    d_preds_coefs = d_preds %>% left_join(d_coefs_load, by = c("method", "label", "rowname"))
   }
   remove(d_preds, d_coefs_load, l_example_labelled_load)
   
@@ -424,27 +427,39 @@ simulate_and_calc = function(load_type = "load", injury, coefs, rep = 1){
   
   # calculate coverage
   d_preds_splines = predict_and_combine(fit_splines, list_example, method = "Restricted Cubic Splines (Data-driven)")
+  d_preds_splines
   d_coverage_splines = coverage(d_preds_splines, list_example, coefs = !!coefs, rep = rep)
   remove(d_preds_splines)
   d_preds_splines_loc = predict_and_combine(fit_splines_loc, list_example, method = "Restricted Cubic Splines (Subjectively)")
   d_coverage_splines_loc = coverage(d_preds_splines_loc, list_example, coefs = !!coefs, rep = rep)  
   remove(d_preds_splines_loc)
+  d_cov1 = bind_rows(d_coverage_splines, d_coverage_splines_loc)
+  remove(d_coverage_splines, d_coverage_splines_loc)
   d_preds_fp = predict_and_combine(fit_fp, list_example, method = "Fractional Polynomials")
   d_coverage_fp = coverage(d_preds_fp, list_example, coefs = !!coefs, rep = rep)  
   remove(d_preds_fp)
+  d_cov2 = bind_rows(d_cov1, d_coverage_fp)
+  remove(d_cov1, d_coverage_fp)
   d_preds_lin = predict_and_combine(fit_lin, list_example, method = "Linear Regression")
   d_coverage_lin = coverage(d_preds_lin, list_example, coefs = !!coefs, rep = rep) 
   remove(d_preds_lin)
+  d_cov3 = bind_rows(d_cov2, d_coverage_lin)
+  remove(d_cov2, d_coverage_lin)
   d_preds_cat = predict_and_combine(fit_cat, list_example, method = "Categorized (Quartiles)", load = load_quarts)
   d_coverage_cat = coverage(d_preds_cat, list_example, coefs = !!coefs, rep = rep, cat = TRUE, load_type = load_type)
   remove(d_preds_cat)
+  d_cov4 = bind_rows(d_cov3, d_coverage_cat)
+  remove(d_cov3, d_coverage_cat)
   d_preds_cat_loc = predict_and_combine(fit_cat_loc, list_example, method = "Categorized (Subjectively)", load = load_cat)
   d_coverage_cat_loc = coverage(d_preds_cat_loc, list_example, coefs = !!coefs, rep = rep, cat = TRUE, load_type = load_type, subjective = TRUE)
   remove(d_preds_cat_loc)
+  d_cov5 = bind_rows(d_cov4, d_coverage_cat_loc)
+  remove(d_cov4, d_coverage_cat_loc)
   d_preds_quad = predict_and_combine(fit_quad, list_example, method = "Quadratic Regression")
   d_coverage_quad = coverage(d_preds_quad, list_example, coefs = !!coefs, rep = rep) 
   remove(d_preds_quad)
-  d_prop_coverage = bind_rows(d_coverage_splines, d_coverage_splines_loc, d_coverage_fp, d_coverage_lin, d_coverage_cat, d_coverage_cat_loc, d_coverage_quad)
+  d_prop_coverage = bind_rows(d_cov5, d_coverage_quad)
+  remove(d_cov5, d_coverage_quad)
   
   # obtain c-statistics and brier score
   v_splines = validation_stats(fit_splines, injury = !!injury, l_data = l_load)
