@@ -546,38 +546,28 @@ options(warn=0)
 
 
 #--------------------------reading RDS files 
-# to check a single dataset:
+
+# to check a single dataset, you can run:
 readRDS("my\\file_location\\u\\1_d_u.rds") 
 
-# to read all the simulated files at once
-# we first make an empty dataset with the right dimensions
-n_d_col = 23 # number of columns
-n_d_rows_u = 43 # number of rows
+# for reading 1 to nsim number of files and collating to 1 dataset:
+folder_u = "my\\file\\location\\u"
+folder_j = "my\\file\\location\\j"
+folder_lin = "my\\file\\location\\lin"
+folder_flat = "my\\file\\location\\flat"
 
-make_dframe = function(n_d_col, n_d_rows){
-  d_estimates = data.frame(matrix(ncol = n_d_col, nrow = (n_sim*n_d_rows))) # 60 = number of rows generated with 1 rep of simulate_and_fit()
-  col_names = c("Parameter", "Coefficient", "SE", "CI_low", "CI_high", "z", "df_error", "p", "method", "rmse", "brier", "c_stat", "n", "sig", "rep", "n_coverage", "denominator", "prop", "n_missing_pred", "prop_missing", "n_missing_cov", "prop_missing_cov", "mse")
-  colnames(d_estimates) = col_names
+obtain_data = function(rel, path){
+  files = list.files(path = path)
+  d_estimates = data.frame()
+  for(i in 1:length(files)){
+    temp_data = readRDS(paste0(path, "\\",i,"_d_",rel,".rds"))
+    d_estimates = rbind(d_estimates, temp_data)
+  }
   d_estimates
 }
 
-d_estimates_u = make_dframe(n_d_col, n_d_rows_u)
-
-# object with the file location where all the simulated dataset files are
-# then save an object with the list of filenames
-folder_u = "my\\file\\location\\u"
-u_files = list.files(path = folder_u)
-
-# for-loop that fills in the empty dataset with all of the results
-for(i in 1:length(u_files)){
-  pos_end = i*n_d_rows_u
-  pos_start =  pos_end - (n_d_rows_u-1)
-  
-  d_estimates_u[pos_start:pos_end,] = readRDS(paste0(folder_u, "\\",i,"_d_u.rds"))
-}
-
-d_estimates_u = d_estimates_u %>% as_tibble()
-
-# to save the results for use (calculating mean RMSE and so on)
-saveRDS(d_estimates_u, file=paste0("D:\\r skript\\simulation_nonlinearity\\results_combined\\d_u.rds"))
+d_u = obtain_data("u", folder_flat)
+d_j = obtain_data("j", folder_flat)
+d_lin = obtain_data("lin", folder_flat)
+d_flat = obtain_data("flat", folder_flat)
 
