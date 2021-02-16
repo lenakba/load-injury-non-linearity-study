@@ -8,7 +8,6 @@
 #  the anonymised datasets are not in the GitHub repository, only available
 # as supplementary to the non-linearity study
 
-
 library(tidyverse) # for datareading, wrangling and handling
 library(mice) # multiple imputation
 
@@ -16,7 +15,6 @@ library(mice) # multiple imputation
 # and strings aren't automatically read as factors
 options(scipen = 17, 
         stringsAsFactors = FALSE)
-
 
 # loading unimputed datasets
 # code is only for illustration
