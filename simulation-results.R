@@ -2,7 +2,7 @@
 # simulation_results_u_categorization_fixed.csv
 # and calculate the mean and percentages of performance measures
 # should be able to reproduce results found in Table 1 and Table 2 in the article
-# And Figure 3
+# And reproduce Figure 3
 
 # so we don't have to deal with scientific notations
 # and strings aren't automaticcaly read as factors
