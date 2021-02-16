@@ -1,3 +1,12 @@
+# this scripts show  how the multiple imputation
+# was performed in the non-linearity study
+# The analyses cannot be reproduced as the data
+# are only available as anonymised versions
+# where columns of background information etc. are removed
+# this information was used to impute the data used in the article
+# therefore, this script is mostly available for transperancy
+
+
 library(tidyverse) # for datareading, wrangling and handling
 library(mice) # multiple imputation
 
@@ -10,9 +19,9 @@ options(scipen = 17,
 # loading unimputed datasets
 # code is only for illustration
 folder_base = paste0("our\\data\\folder\\")
-d_u19 = read_csv(paste0(folder_base, "data_football_u19_anonymised.csv"))
-d_handball = read_csv(paste0(folder_base, "data_handball_anonymised.csv"))
-d_strom = read_csv(paste0(folder_base, "data_football_premierdiv_anonymised.csv"))
+d_u19 = read_delim(paste0(folder_base, "data_football_u19_anonymised.csv"), delim = ";")
+d_handball = read_delim(paste0(folder_base, "data_handball_anonymised.csv"), delim = ";")
+d_strom = read_delim(paste0(folder_base, "data_football_premierdiv_anonymised.csv"), delim = ";")
 
 #------------------------imputation
 
