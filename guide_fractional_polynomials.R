@@ -127,8 +127,6 @@ fit_mixed = glmer_fp(d, injury, load, "(load|p_id)")
 # an example of using the function with a random intercept only
 fit_mixed_intercept = glmer_fp(d, injury, load, "(1|p_id)")
 
-fit_mixed = glmer_fp(d, injury, load, "(1|p_id) + (load|p_id)")
-
 # if both were able to converge, we can determine best fit with AIC
 AIC(fit_mixed)
 AIC(fit_mixed_intercept)
@@ -163,7 +161,7 @@ names(pred_data_distinct)[1] = "load"
 pred_load_mixed_distinct = predictInterval(fit_mixed_intercept, ignore.fixed.terms = 1, type = "probability", newdata = pred_data_distinct)
 pred_load_mixed_distinct$load = pred_data_distinct$load
 
-# we plot, now with confidence intervals
+# plot
 ggplot(pred_load_mixed_distinct, aes(x = load, y = fit, min = lwr, max = upr)) +
   geom_line() +
   geom_ribbon(alpha = 0.3) +
