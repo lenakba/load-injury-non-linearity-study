@@ -505,72 +505,6 @@ simulate_and_calc = function(load_type = "load", injury, coefs, rep = 1){
 # for a test, run
 # simulate_and_calc(load_type = "acwr", injury = injury_j, coefs = coefs_j_acwr)
 
-# for the flat shape, we are only interested in false discovery
-# the function below is similar to the one used above, but trimmed of unecessary
-# performance parameters etc. that we are not interested in for the flat shape
-false_discovery = function(load_type = "load", injury, coefs, rep = 1){
-  
-  injury = enexpr(injury)
-  coefs = enquo(coefs)
-  
-  # simulate injuries and create a list of datasets of unequal sizes
-  if(load_type == "acwr"){
-    l_load = list(
-      simulate_injury(d_acwr, load = "acwr",  sim = FALSE, clsize = clsize_orig_acwr, n_athletes = n_athletes_orig_acwr),
-      simulate_injury(d_acwr, load = "acwr",  sim = TRUE, clsize = 3*clsize)
-    )
-  } else if(load_type == "load"){
-    l_load = list(
-      simulate_injury(d_load, load = load_type, sim = FALSE, clsize = clsize_orig, n_athletes = n_athletes_orig),
-      simulate_injury(d_load, load = load_type,  sim = TRUE, clsize = 3*clsize)
-    ) 
-  }
-  
-  # buffer for convergence issues
-  optctrl = list(maxfun=100000)
-  
-  # fit models
-  fit_splines = l_load %>% map(~eval_bare(expr(glmer(!!injury ~ rcs(load_noised, 3) + (1 | p_id), family = "binomial", data = ., control=glmerControl(optCtrl=optctrl)))))
-  
-  # if(load_type == "load"){
-  fit_splines_loc = l_load %>% map(~eval_bare(expr(glmer(!!injury ~ rcs(load_noised, c(500, 1500, 2500)) + (1 | p_id), family = "binomial", data = ., control=glmerControl(optCtrl=optctrl)))))
-  # } else if(load_type == "acwr"){
-  #   fit_splines_loc = l_load %>% map(~eval_bare(expr(glmer(!!injury ~ rcs(load_noised, c(1, 1.75, 2)) + (1 | p_id), family = "binomial", data = ., control=glmerControl(optCtrl=optctrl)))))
-  # }
-  fit_fp = l_load %>% map(~eval_bare(expr(glmer_fp(., !!injury))))
-  fit_lin =  l_load %>% map(~eval_bare(expr(glmer(!!injury ~ load_noised + (1 | p_id), family = "binomial", data = ., control=glmerControl(optCtrl=optctrl)))))
-  fit_cat = l_load %>% map(~eval_bare(expr(glmer(!!injury ~ load_quarts + (1 | p_id), family = "binomial", data = ., control=glmerControl(optCtrl=optctrl)))))
-  fit_cat_loc = l_load %>% map(~eval_bare(expr(glmer(!!injury ~ as.factor(load_cat) + (1 | p_id), family = "binomial", data = ., control=glmerControl(optCtrl=optctrl)))))
-  fit_quad = l_load %>% map(~eval_bare(expr(glmer(!!injury ~ I(load_noised/500) + I((load_noised/500)^2) + (1 | p_id), family = binomial("logit"), data = ., control=glmerControl(optCtrl=optctrl)))))
-  
-  # obtain parameters
-  l_splines = fit_splines %>% map(., ~get_params(., "Restricted Cubic Splines (Data-driven)"))
-  l_splines_loc = fit_splines_loc %>% map(., ~get_params(., "Restricted Cubic Splines (Subjectively)"))
-  l_fp = fit_fp %>% map(., ~get_params(., "Fractional Polynomials"))
-  l_lin = fit_lin %>% map(., ~get_params(., "Linear Regression"))
-  l_cat = fit_cat %>% map(., ~get_params(., "Categorized (Quartiles)"))
-  l_cat_loc = fit_cat_loc %>% map(., ~get_params(., "Categorized (Subjectively)"))
-  l_quad = fit_quad %>% map(., ~get_params(., "Quadratic Regression"))
-  remove(fit_splines, fit_splines_loc, fit_fp, fit_lin, fit_cat, fit_cat_loc, fit_quad)
-  
-  # combine to one big listC
-  l_params = list(l_splines, l_splines_loc, l_fp, l_lin, l_cat, l_cat_loc, l_quad)
-  remove(l_splines, l_splines_loc, l_fp, l_cat, l_cat_loc, l_quad)
-  n_methods = length(l_params)
-  l_params = flatten(l_params)
-  l_params = l_params %>% map(. %>% as_tibble())
-  
-  # simulation data size
-  l_n = l_load %>% map(~nrow(.))
-  l_n = rep(l_n, n_methods)
-  remove(l_load)
-  
-  # add sample size to datasets and collapse to one big dataframe
-  d_params = l_params %>% map2(.x = ., .y = l_n, ~mutate(.x, n = .y)) %>% do.call(bind_rows, .) %>% as_tibble()
-  d_params = d_params %>% mutate(sig = ifelse(p < 0.05, 1, 0), rep = rep) # 1 for sig, 0 for insig
-  d_params
-}
-
 #-----------------for loop running simulations
 n_sim = 1900 # set to the number of permutations. 
 set.seed = 1234
@@ -614,19 +548,6 @@ for(i in 4:n_sim){
 }
 options(warn=0)
 
-# note that another function is used for the flat shape
-options(warn=-1)
-n_sim = 6400 # false discovery rate had a higher required nsim to achieve Monte Carlo Standard Error < 0.5
-set.seed = 1234
-rel = "flat"
-for(i in 1:n_sim){
-  # capture seeds
-  cat(capture.output(.Random.seed), file=paste0("seeds\\",i,"_random_seed.txt"), sep="\n")
-  d_flat = false_discovery(injury = injury_flat, coefs = coefs_flat, rep = i)
-  saveRDS(d_flat, file=paste0("",rel,"_coverage\\",i,"_d_",rel,".rds"))
-}
-options(warn=0)
-
 #--------------------------reading RDS files 
 
 # to check a single dataset, you can run:
@@ -636,7 +557,6 @@ readRDS("my\\file_location\\u\\1_d_u.rds")
 folder_u = "my\\file\\location\\u"
 folder_j = "my\\file\\location\\j"
 folder_lin = "my\\file\\location\\lin"
-folder_flat = "my\\file\\location\\flat"
 
 obtain_data = function(rel, path){
   files = list.files(path = path)
@@ -651,5 +571,4 @@ obtain_data = function(rel, path){
 d_u = obtain_data("u", folder_flat)
 d_j = obtain_data("j", folder_flat)
 d_lin = obtain_data("lin", folder_flat)
-d_flat = obtain_data("flat", folder_flat)
 
