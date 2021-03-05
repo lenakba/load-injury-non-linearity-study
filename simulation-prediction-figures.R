@@ -461,6 +461,4 @@ plot_sim_shapes(d_preds_u %>% filter(label == "n = 8494"), coefs = coefs_u)
 plot_sim_shapes(d_preds_j %>% filter(label == "n = 8494"), 'Gabbett 2016 J shape', d_coefs_acwr, coefs_j_acwr, x_label= "ACWR 7:21")
 # linear shape
 plot_sim_shapes(d_preds_lin %>% filter(label == "n = 8494"), 'Linear relationship', coefs = coefs_lin)
-# flat shape
-plot_sim_shapes(d_preds_flat %>% filter(label == "n = 8494"), 'Flat shape (no relationship) sRPE', coefs = coefs_flat)
 
