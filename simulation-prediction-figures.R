@@ -225,16 +225,21 @@ l_load_example = l_load %>% map(. %>% dplyr::select(p_id, label, starts_with("lo
 acwr_7_21_values = d_acwr_example$load
 load_values = d_load_example$load
 
-text_size = 14
+text_size = 13
+ostrc_blue = "#001137"
 # check distributions of load values
 plot_hist_rpe = ggplot(enframe(load_values), aes(x = load_values)) + 
-  geom_histogram() + theme_light() + xlab("sRPE (AU)") + ylab("Count")  +
+  geom_histogram(fill = ostrc_blue) + theme_light() + xlab("sRPE (AU)") + ylab("Count")  +
     theme(axis.text = element_text(size=text_size),
-          axis.title =  element_text(size=text_size))
+          axis.title =  element_text(size=text_size),
+          panel.grid.major = element_blank(), 
+          panel.grid.minor = element_blank())
 plot_hist_acwr = ggplot(enframe(acwr_7_21_values), aes(x = acwr_7_21_values)) + 
-  geom_histogram() + theme_light() + xlab("ACWR 7:21")  + ylab("Count") + 
+  geom_histogram(fill = ostrc_blue) + theme_light() + xlab("ACWR 7:21")  + ylab("Count") + 
   theme(axis.text = element_text(size=text_size),
-        axis.title =  element_text(size=text_size))
+        axis.title =  element_text(size=text_size),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank())
 
 #---------------------------------- Dataset with true coefficients for use in figures
 d_collated_load = l_load_example %>% bind_rows()
