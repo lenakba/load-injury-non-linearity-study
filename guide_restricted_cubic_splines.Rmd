@@ -2,16 +2,16 @@
 title: "Performing Restricted Cubic Splines in R"
 author: "Lena Kristin Bache-Mathiesen"
 output:
-  html_document:
+  pdf_document:
     toc: yes
   word_document: default
-  pdf_document:
+  html_document:
     toc: yes
 editor_options:
   chunk_output_type: console
 ---
 
-## Introduction
+# Introduction
 This document is intended as a guide for modeling the relationship between
 a measure of training load and injury in sports research, using Restricted Cubic Splines (RCS).
 The examples will go through standard logistic regression, 
@@ -20,7 +20,7 @@ training load using splines in a Poisson model and other regression models are t
 The best-practice information on splines is based on Frank Harrell's "Regression Modeling Strategies"
 (available here: \url{https://link.springer.com/book/10.1007/978-3-319-19425-7})
 
-## Preparation
+# Preparation
 
 First, load required packages.
 
@@ -35,26 +35,20 @@ Next step is to load your data. Here, we used the d_example_guide.rds data avail
 It is simulated from football data for the example to be reproducible.
 The object "d" in the r-code below can be replaced with your own data. 
 At the minimum, your data should have:
-<ul>
- <li>one column for load, measured in any metric (such as sRPE, GPS measures or ACWR)</li>
- <li>one column for injury, must either be a logical variable (TRUE/FALSE) or coded (0 for no injury, 1 for injury) to 
-     work in our logistic regression model.</li>
- <li> one column for athlete ID, coupling the load values and injuries to the right person</li>
-</ul>
-
-<!-- Latex Version: -->
-<!-- \begin{itemize} -->
-<!-- \item one column for load, measured in any metric (such as sRPE, GPS measures or ACWR) -->
-<!-- \item one column for injury, must either be a logical variable (TRUE/FALSE) or coded (0 for no injury, 1 for injury) -->
-<!--    to work in our logistic regression model. -->
-<!-- \item one column for athlete ID, coupling the load values and injuries to the right person -->
-<!-- \end{itemize} -->
+\begin{itemize}
+\item one column for load, measured in any metric (such as sRPE, GPS measures or ACWR)
+\item one column for injury, must either be a logical variable (TRUE/FALSE) or coded (0 for no injury, 1 for injury)
+   to work in our logistic regression model.
+\item one column for athlete ID, coupling the load values and injuries to the right person
+\end{itemize}
 
 ```{r load data, warning=FALSE, echo = TRUE, message=FALSE}
 d = readRDS("d_example_guide.rds")
 ```
 
-## Standard Logistic Regression
+# Standard Logistic Regression
+
+## Fitting the model
 
 For a regular logistic regression model, we can write:
 ```{r, warning=FALSE, echo = TRUE, message=FALSE}
@@ -109,7 +103,7 @@ exp(coef(fit_splines_loc))
 Even should we transform our estimates to an Odds Ratio, the coefficients from a splines-results make little sense.
 The p-values can be used and understood as usual.
 
-### Visualization
+## Visualization
 
 The best way to interpret splines is by visualizing predictions. 
 
@@ -146,7 +140,9 @@ ggplot(pred_data, aes(x = load, y = yhat)) +
 Mapping the load values to the predicted probabilities (figure above) showed that the splines
 modelled a U-shaped relationship for the example data.
 
-## Mixed Effects Regression Model
+# Mixed Effects Regression Model
+
+## Fitting the model
 
 A mixed effects logistic regression model is a bit more complicated.
 Most notably, because running a general linear mixed model (GLMM) 
@@ -173,7 +169,7 @@ as the random slope model failed to converge.
 fit_mixed_splines = glmer(injury ~ rcs(load, c(500, 1500, 2500)) + (1 | p_id), family = "binomial", data = d)
 ```
 
-### Visualization
+## Visualization
 
 Since we now have the random effect, we must set the example data to a fixed athlete as our example
 we make a new object name for this dataset here, so we don't overwrite our original data object.

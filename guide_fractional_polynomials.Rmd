@@ -35,26 +35,20 @@ Next step is to load your data. Here, we used the d_example_guide.rds data avail
 It is simulated from football data for the example to be reproducible.
 The object "d" in the r-code below can be replaced with your own data. 
 At the minimum, your data should have:
-<ul>
- <li>one column for load, measured in any metric (such as sRPE, GPS measures or ACWR)</li>
- <li>one column for injury, must either be a logical variable (TRUE/FALSE) or coded (0 for no injury, 1 for injury) to 
-     work in our logistic regression model.</li>
- <li> one column for athlete ID, coupling the load values and injuries to the right person</li>
-</ul>
-
-<!-- Latex Version: -->
-<!-- \begin{itemize} -->
-<!-- \item one column for load, measured in any metric (such as sRPE, GPS measures or ACWR) -->
-<!-- \item one column for injury, must either be a logical variable (TRUE/FALSE) or coded (0 for no injury, 1 for injury) -->
-<!--    to work in our logistic regression model. -->
-<!-- \item one column for athlete ID, coupling the load values and injuries to the right person -->
-<!-- \end{itemize} -->
+\begin{itemize}
+\item one column for load, measured in any metric (such as sRPE, GPS measures or ACWR)
+\item one column for injury, must either be a logical variable (TRUE/FALSE) or coded (0 for no injury, 1 for injury)
+   to work in our logistic regression model.
+\item one column for athlete ID, coupling the load values and injuries to the right person
+\end{itemize}
 
 ```{r load data, warning=FALSE, echo = TRUE, message=FALSE}
 d = readRDS("d_example_guide.rds")
 ```
 
 # Standard Logistic Regression
+
+## Fitting the model
 
 For a regular logistic regression model, we can write:
 ```{r, warning=FALSE, echo = TRUE, message=FALSE}
@@ -93,7 +87,7 @@ To obtain Odds Ratios, we can run:
 exp(coef(fit_fp))
 ```
 
-### Visualization
+## Visualization
 
 With fractional polynomials, we can interpret our results numerically, but it may still be useful to
 create a figure of the predictions to see the relationship shape.
@@ -133,6 +127,8 @@ Mapping the load values to the predicted probabilities (figure above) showed tha
 modelled a U-shaped relationship for the example data.
 
 # Mixed Effects Regression Model
+
+## Fitting the model
 
 A mixed effects logistic regression model is a bit more complicated
 most notably, because running a general linear mixed model (GLMM) 
@@ -213,7 +209,7 @@ AIC(fit_mixed_intercept)
 ```
 
 As seen above, the random intercept model had the lowest AIC and therefore the better fit.
-### Visualization
+## Visualization
 
 Since we now have the random effect, we must set the example data to a fixed athlete as our example.
 we make a new object name for this dataset here, so we don't overwrite our original data object:
