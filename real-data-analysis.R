@@ -336,6 +336,7 @@ d_acwr_measures = bind_rows(l_acwr_u19$`5` %>% mutate(data = "Football U-19", ty
                             l_acwr_mp_u19$`5` %>% mutate(data = "Football U-19", type = "Microcycle"), 
                             l_acwr_mp_handball$`5` %>% mutate(data = "Handball", type = "Microcycle"),
                             l_acwr_mp_strom$`5` %>% mutate(data = "Football Elite", type = "Microcycle"))
+# note that the figure won't be reproduced in the same colors
 library(devEMF)
 devEMF::emf("acwr_ratio_assumption.emf", width = 8, height = 6)
 ggplot(d_acwr_measures, aes(x = chronic_load, y = acwr)) +
