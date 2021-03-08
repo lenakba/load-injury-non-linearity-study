@@ -32,7 +32,7 @@ library(merTools) # a sister-package to lme4 for extra functions on mixed models
 ```
 
 Next step is to load your data. Here we used the d_example_guide.rds data available from the GitHub repository. It is simulated 
-from football data for the example to be reproducible. nThe object "d" in the r-code below 
+from football data for the example to be reproducible. The object "d" in the r-code below 
 can be replaced with your own data. At the minimum, your data should have:
 \begin{itemize}
 \item one column for load, measured in any metric (such as sRPE, GPS measures or ACWR)
