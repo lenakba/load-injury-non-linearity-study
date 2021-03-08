@@ -160,7 +160,6 @@ For a mixed model with binomial distribution, random intercept and random slope 
 fit_mixed_slope = glmer(injury ~ load + (load | p_id), family = "binomial", data = d)
 ```
 
-
 Finally, our splines model with knots placed where we think they should be, based on our histogram in the previous section. 
 Note that GLMMs can take some time to run.
 In this example we use an intercept-only model, 
