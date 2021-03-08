@@ -98,7 +98,7 @@ pred_data_mixed = d
 pred_data_mixed$p_id = 1
 
 # this time, we use the predictInterval() function that also predict the confidence intervals. 
-# this is why we loaded the merTools package. predictInterval() can't be used on anything but a glmer()-created objected
+# this is why we loaded the merTools package. predictInterval() can't be used on anything but a glmer()-created object
 # note that estimating the confidence intervals might take some time
 pred_load_mixed_ci = predictInterval(fit_mixed_splines, ignore.fixed.terms = 1, type = "probability", newdata = pred_data_mixed)
 
@@ -118,7 +118,6 @@ names(pred_data_distinct)[1] = "load"
 pred_load_mixed_distinct = predictInterval(fit_mixed_splines, ignore.fixed.terms = 1, type = "probability", newdata = pred_data_distinct)
 pred_load_mixed_distinct$load = pred_data_distinct$load
 
-# we plot, now with confidence intervals
 ggplot(pred_load_mixed_distinct, aes(x = load, y = fit, min = lwr, max = upr)) +
   geom_line() +
   geom_ribbon(alpha = 0.3)
