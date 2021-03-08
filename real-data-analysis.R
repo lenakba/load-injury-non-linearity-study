@@ -618,29 +618,53 @@ d_preds_load_strom_linear = predict_on_imputed(fit_load_strom_linear, d_sample_l
 d_preds_acwr_7_21_strom_linear = predict_on_imputed(fit_acwr_7_21_strom_linear, d_sample_acwr_strom)  %>% mutate(load_type = "ACWR 7:21")
 d_preds_acwr_mp_strom_linear = predict_on_imputed(fit_acwr_mp_strom_linear, d_sample_acwr_strom) %>% mutate(load_type = "ACWR 1:3 micro cycles")
 
-# combine fotball and handball datasets
-d_preds_u19_linear = bind_rows(d_preds_load_u19_linear, d_preds_acwr_7_21_u19_linear, d_preds_acwr_mp_u19_linear) %>% mutate(pop = "Football U19")
+# combine football and handball data
+d_preds_u19_linear = bind_rows(d_preds_load_u19_linear, d_preds_acwr_7_21_u19_linear, d_preds_acwr_mp_u19_linear) %>% mutate(pop = "Football U-19")
 d_preds_handball_linear = bind_rows(d_preds_load_handball_linear, d_preds_acwr_7_21_handball_linear, d_preds_acwr_mp_handball_linear) %>% mutate(pop = "Handball")
-d_preds_strom_linear = bind_rows(d_preds_load_strom_linear, d_preds_acwr_7_21_strom_linear, d_preds_acwr_mp_strom_linear) %>% mutate(pop = "Football\nStrømsgodset")
+d_preds_strom_linear = bind_rows(d_preds_load_strom_linear, d_preds_acwr_7_21_strom_linear, d_preds_acwr_mp_strom_linear) %>% mutate(pop = "Football Elite")
 d_preds_linear = bind_rows(d_preds_u19_linear, d_preds_handball_linear, d_preds_strom_linear)
 
-d_preds_injury0_u19_linear = bind_rows(d_preds_load_injury0_u19_linear, d_preds_acwr_7_21_injury0_u19_linear) %>% mutate(pop = "Football U19")
+d_preds_injury0_u19_linear = bind_rows(d_preds_load_injury0_u19_linear, d_preds_acwr_7_21_injury0_u19_linear) %>% mutate(pop = "Football U-19")
 d_preds_injury0_handball_linear = bind_rows(d_preds_load_injury0_handball_linear, d_preds_acwr_7_21_injury0_handball_linear) %>% mutate(pop = "Handball")
-d_preds_injury0_strom_linear = bind_rows(d_preds_load_injury0_strom_linear, d_preds_acwr_7_21_injury0_strom_linear) %>% mutate(pop = "Football\nStrømsgodset")
+d_preds_injury0_strom_linear = bind_rows(d_preds_load_injury0_strom_linear, d_preds_acwr_7_21_injury0_strom_linear) %>% mutate(pop = "Football Elite")
 d_preds_injury0_linear = bind_rows(d_preds_injury0_u19_linear, d_preds_injury0_handball_linear, d_preds_injury0_strom_linear)
 
 
 
-# examples of figures that can be made
-text_size = 18
-green_color = "#346702"
+
+#------------------------Figures with all results (also flat results) for appendix
+# renaming labels to be consistent with terms in the article
+d_preds_full = d_preds %>% filter(pop == "Football U-19" & load_values <= 2000 | pop == "Handball" | pop == "Football Elite")
+d_preds_full = d_preds_full %>% mutate(load_type = case_when(load_type == "ACWR 1:3 Match periods" ~ "Micro-cycle ACWR 1:3",
+                                                             load_type == "ACWR 7:21" ~ "Daily ACWR 7:21",
+                                                             TRUE ~ load_type))
+
+d_preds_linear_full = d_preds_linear %>% filter(pop == "Football U-19" & load_values <= 2000 | pop == "Handball" | pop == "Football Elite")
+d_preds_linear_full = d_preds_linear_full %>% mutate(load_type = case_when(load_type == "ACWR 1:3 Match periods" ~ "Micro-cycle ACWR 1:3",
+                                                                           load_type == "ACWR 7:21" ~ "Daily ACWR 7:21",
+                                                                           TRUE ~ load_type))
+
+d_preds_injury0_full = d_preds_injury0 %>% filter(pop == "Football U-19" & load_values <= 2000 | pop == "Handball" | pop == "Football Elite")
+d_preds_injury0_full= d_preds_injury0_full %>% mutate(load_type = case_when(load_type == "ACWR 1:3 Match periods" ~ "Micro-cycle ACWR 1:3",
+                                                                            load_type == "ACWR 7:21" ~ "Daily ACWR 7:21",
+                                                                            TRUE ~ load_type))
+d_preds_injury0_linear_full = d_preds_injury0_linear %>% filter(pop == "Football U-19" & load_values <= 2000 | pop == "Handball" | pop == "Football Elite")
+d_preds_injury0_linear_full= d_preds_injury0_linear_full %>% mutate(load_type = case_when(load_type == "ACWR 1:3 Match periods" ~ "Micro-cycle ACWR 1:3",
+                                                                                          load_type == "ACWR 7:21" ~ "Daily ACWR 7:21",
+                                                                                          TRUE ~ load_type))
+
+# note that the figures won't be reproduced with the same colors 
+# and theme, but the results are the same
+# (the theme used for the article were from self-made R theme functions)
+text_size = 12
+ostrc_yellow = "#FF9900"
 d_preds_full = d_preds %>% filter(pop == "Football U19" & load_values <= 2000 | pop == "Handball" | pop == "Football\nStrømsgodset")
 d_preds_linear_full = d_preds_linear %>% filter(pop == "Football U19" & load_values <= 2000 | pop == "Handball" | pop == "Football\nStrømsgodset")
 ggplot(d_preds_full, aes(x = load_values, y = yhat)) +
   facet_wrap(vars(load_type, pop), scales = "free", ncol = 3) +
   geom_line(size = 1) + 
   geom_line(data = d_preds_linear_full, aes(x = load_values, y = yhat)) + 
-  geom_ribbon(aes(min = lower, max = upper), alpha = 0.25, fill = green_color) +
+  geom_ribbon(aes(min = lower, max = upper), alpha = 0.25, fill = ostrc_yellow) +
   ylab("Probability of injury\Next 4 days or\nNext Microcycle") +
   xlab("Load value")  +
   scale_y_continuous(limits = c(0, 1.0)) +
@@ -656,7 +680,7 @@ ggplot(d_preds_injury0_full, aes(x = load_values, y = yhat)) +
   facet_wrap(vars(load_type, pop), scales = "free", ncol = 3) +
   geom_line(size = 1) + 
   geom_line(data = d_preds_injury0_linear_full, aes(x = load_values, y = yhat)) + 
-  geom_ribbon(aes(min = lower, max = upper), alpha = 0.25, fill = green_color) +
+  geom_ribbon(aes(min = lower, max = upper), alpha = 0.25, fill = ostrc_yellow) +
   ylab("Probability of injury\non same day") +
   xlab("Load value")  +
   scale_y_continuous(limits = c(0, 1.0))  +
@@ -666,28 +690,26 @@ ggplot(d_preds_injury0_full, aes(x = load_values, y = yhat)) +
         legend.position = "bottom",
         legend.title = element_blank())
 
-# Figure made for article
-d_preds_load_injury0_handball = d_preds_load_injury0_handball %>% mutate(injury = "(A) Current Day (N = 472)")
-d_preds_load_handball = d_preds_load_handball %>% mutate(injury = "(B) Next 4 Days (N = 1 136)")
+#------------------------- Figure made for article with handball only
+d_preds_load_injury0_handball = d_preds_load_injury0_handball %>% mutate(injury = "(A) Current Day (472 Injuries)")
+d_preds_load_handball = d_preds_load_handball %>% mutate(injury = "(B) Next 4 Days (1 136 Injuries)")
 
-d_preds_load_injury0_handball_linear = d_preds_load_injury0_handball_linear %>% mutate(injury = "(A) Current Day (N = 472)")
-d_preds_load_handball_linear = d_preds_load_handball_linear %>% mutate(injury = "(B) Next 4 Days (N = 1 136)")
+d_preds_load_injury0_handball_linear = d_preds_load_injury0_handball_linear %>% mutate(injury = "(A) Current Day (472 Injuries)")
+d_preds_load_handball_linear = d_preds_load_handball_linear %>% mutate(injury = "(B) Next 4 Days (1 136 Injuries)")
 
 d_preds_sig = bind_rows(d_preds_load_injury0_handball, d_preds_load_handball) 
 d_preds_sig_lin = bind_rows(d_preds_load_injury0_handball_linear, d_preds_load_handball_linear)
 
-# for bjsm green color
-bjsm_green = "#346702"
-text_size = 18
+# note that the figures won't be reproduced with the same colors 
+# and theme, but the results are the same
+# (the theme used for the article were from self-made R theme functions)
+text_size = 12
 # there are so few values to go on beyond 2000 that the confidence intervals are incredibly broad
-library(devEMF)
-emf("splines_handball_injury.emf", width = 12, height = 5)
 ggplot(d_preds_sig, aes(x = load_values, y = yhat)) +
   facet_wrap(~injury, ncol = 2) +
   geom_line(size = 1) + 
   geom_line(data = d_preds_sig_lin, aes(x = load_values, y = yhat)) + 
-  geom_ribbon(aes(min = lower, max = upper), alpha = 0.25, fill = bjsm_green) +
-  theme_line() + 
+  geom_ribbon(aes(min = lower, max = upper), alpha = 0.25, fill = ostrc_yellow) +
   ylab("Probability\nof Injury") +
   xlab("sRPE (AU)")  +
   scale_y_continuous(limits = c(0, 1.0)) +
@@ -696,4 +718,3 @@ ggplot(d_preds_sig, aes(x = load_values, y = yhat)) +
         axis.title =  element_text(size=text_size),
         legend.position = "bottom",
         legend.title = element_blank())
-dev.off()
