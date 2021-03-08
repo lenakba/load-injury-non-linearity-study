@@ -31,7 +31,7 @@ library(lme4) # package for mixed model functions
 library(merTools) # a sister-package to lme4 for extra functions on mixed models
 ```
 
-Next step is to load your data. Here, we used the d_example_guide.rds data available from the GitHub repository. 
+Next step is to load your data. Here we used the d_example_guide.rds data available from the GitHub repository. 
 It is simulated from football data for the example to be reproducible.
 The object "d" in the r-code below can be replaced with your own data. 
 At the minimum, your data should have:
@@ -66,7 +66,7 @@ fit_splines = glm(injury ~ rcs(load, 3), data = d)
 
 
 Here, the placement is determined by the default settings for the rcs function in the rms package.
-according to the documentation, knots are placed based on data quartiles.
+According to the `rms`-package documentation, knots are placed based on quartiles.
 
 We can run the following to create a histogram:
 ```{r, warning=FALSE, echo = TRUE, message=FALSE}
