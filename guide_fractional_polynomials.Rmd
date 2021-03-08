@@ -88,6 +88,11 @@ fit_summary$aic
 fit_summary$coefficients
 ```
 
+To obtain Odds Ratios, we can run:
+```{r, warning=FALSE, echo = TRUE, message=FALSE}
+exp(coef(fit_fp))
+```
+
 ### Visualization
 
 With fractional polynomials, we can interpret our results numerically, but it may still be useful to

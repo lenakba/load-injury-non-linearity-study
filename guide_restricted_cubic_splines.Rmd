@@ -101,6 +101,11 @@ We can run `summary()` to recieve the coefficients (Estimate), standard error an
 summary(fit_splines_loc)
 ```
 
+To obtain Odds Ratios, we can run:
+```{r, warning=FALSE, echo = TRUE, message=FALSE}
+exp(coef(fit_splines_loc))
+```
+
 Even should we transform our estimates to an Odds Ratio, the coefficients from a splines-results make little sense.
 The p-values can be used and understood as usual.
 
