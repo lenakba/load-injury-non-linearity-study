@@ -11,7 +11,7 @@ editor_options:
   chunk_output_type: console
 ---
 
-# Introduction
+## Introduction
 This document is intended as a guide for modeling the relationship between
 a measure of training load and injury in sports research, using Restricted Cubic Splines (RCS).
 The examples will go through standard logistic regression, 
@@ -20,7 +20,7 @@ training load using splines in a Poisson model and other regression models are t
 The best-practice information on splines is based on Frank Harrell's "Regression Modeling Strategies"
 (available here: \url{https://link.springer.com/book/10.1007/978-3-319-19425-7})
 
-# Preparation
+## Preparation
 
 First, load required packages.
 
@@ -31,22 +31,30 @@ library(lme4) # package for mixed model functions
 library(merTools) # a sister-package to lme4 for extra functions on mixed models
 ```
 
-Next step is to load your data. At the minimum, your data should have
-\begin{itemize}
-\item one column for load, measured in any metric (such as sRPE, GPS measures or ACWR)
-\item one column for injury, must either be a logical variable (TRUE/FALSE) or coded (0 for no injury, 1 for injury)
-   to work in our logistic regression model.
-\item one column for athlete ID, coupling the load values and injuries to the right person
-\end{itemize}
+Next step is to load your data. Here, we used the d_example_guide.rds data available from the GitHub repository. 
+It is simulated from football data for the example to be reproducible.
+The object "d" in the r-code below can be replaced with your own data. 
+At the minimum, your data should have:
+<ul>
+ <li>one column for load, measured in any metric (such as sRPE, GPS measures or ACWR)</li>
+ <li>one column for injury, must either be a logical variable (TRUE/FALSE) or coded (0 for no injury, 1 for injury) to 
+     work in our logistic regression model.</li>
+ <li> one column for athlete ID, coupling the load values and injuries to the right person</li>
+</ul>
+
+<!-- Latex Version: -->
+<!-- \begin{itemize} -->
+<!-- \item one column for load, measured in any metric (such as sRPE, GPS measures or ACWR) -->
+<!-- \item one column for injury, must either be a logical variable (TRUE/FALSE) or coded (0 for no injury, 1 for injury) -->
+<!--    to work in our logistic regression model. -->
+<!-- \item one column for athlete ID, coupling the load values and injuries to the right person -->
+<!-- \end{itemize} -->
 
 ```{r load data, warning=FALSE, echo = TRUE, message=FALSE}
-# here, we used the d_example_guide.rds data, simulated from football data, 
-# for the example to be reproducible, but go ahead and 
-# replace the object "d" with your own data. 
 d = readRDS("d_example_guide.rds")
 ```
 
-# Standard Logistic Regression
+## Standard Logistic Regression
 
 For a regular logistic regression model, we can write:
 ```{r, warning=FALSE, echo = TRUE, message=FALSE}
@@ -64,7 +72,7 @@ fit_splines = glm(injury ~ rcs(load, 3), data = d)
 
 
 Here, the placement is determined by the default settings for the rcs function in the rms package.
-according to the documentation, knots are placed based on data quartiles and tertiles etc.
+according to the documentation, knots are placed based on data quartiles.
 
 We can run the following to create a histogram:
 ```{r, warning=FALSE, echo = TRUE, message=FALSE}
@@ -74,8 +82,8 @@ hist(d$load)
 The plot above shows the example data is fairly skewed. Partitioning by quartiles may not be the best fit.
 Running a histogram to check the data should be done before running the first model.
 
-In the code below, instead of the number of knots, we feed the argument with a vector of where along our load 
-variable we wish our knots to be placed.
+In the code below, instead of the number of knots, we feed the argument with a vector. The vector lists the locations of 
+where along our load variable we wish our knots to be placed.
 ```{r, warning=FALSE, echo = TRUE, message=FALSE}
 fit_splines_loc = glm(injury ~ rcs(load, c(500, 1500, 2500)), data = d)
 ```
@@ -86,7 +94,7 @@ AIC(fit_splines)
 AIC(fit_splines_loc)
 ```
 
-Looks like placing the knots had a better fit.
+Since the last AIC was lower, it indicates that placing the knots had a better fit.
 
 We can run `summary()` to recieve the coefficients (Estimate), standard error and p-values of our model:
 ```{r, warning=FALSE, echo = TRUE, message=FALSE}
@@ -103,7 +111,7 @@ The best way to interpret splines is by visualizing predictions.
 In a case where multiple variables have been included in the dataset, 
 a new dataset needs to be created where the other variables have been 
 set to a constant parameter, such as using the mean age.
-We make a new object name for this dataset here, so we don't overwrite our original data object
+We make a new object name for this dataset here, so we don't overwrite our original data object.
 
 ```{r, warning=FALSE, echo = TRUE, message=FALSE}
 pred_data = d
@@ -111,19 +119,18 @@ pred_data$age = 17
 ```
 
 We then add our data to the argument, `newdata`  in the `predict()` command. The argument `type = "response"` means 
-we will receive probability of injury instead of logodds of injury.
-
+we will receive probability of injury instead of logodds of injury:
 ```{r, warning=FALSE, echo = TRUE, message=FALSE}
 pred_load = predict(fit_splines_loc, type = "response", newdata = pred_data)
 ```
 
-To create a figure from our predictions, we must add the predictions to our dataset with the load values used for predictions
+To create a figure from our predictions, we must add the predictions to our dataset with the load values used for predictions.
 ```{r, warning=FALSE, echo = TRUE, message=FALSE}
 pred_data$yhat = pred_load
 ```
 
 We loaded the `tidyverse` package, which includes the `ggplot2` package.
-A `ggplot2`-plot of the simplest, default form:
+To create a simple form of `ggplot2`-plot:
 ```{r, warning=FALSE, echo = TRUE, message=FALSE}
 ggplot(pred_data, aes(x = load, y = yhat)) +
   geom_line() +
@@ -134,23 +141,20 @@ ggplot(pred_data, aes(x = load, y = yhat)) +
 Mapping the load values to the predicted probabilities (figure above) showed that the splines
 modelled a U-shaped relationship for the example data.
 
+## Mixed Effects Regression Model
 
-# Mixed Effects Regression Model
-
-A mixed effects logistic regression model is a bit more complicated
-most notably, because running a general linear mixed model (GLMM) 
+A mixed effects logistic regression model is a bit more complicated.
+Most notably, because running a general linear mixed model (GLMM) 
 isn't part of base R. Here, we use the `lme4` package. 
 Not everything in base R or other packages is compatible with the `lme4` package.
 
 For a mixed model with binomial distribution and random intercept per athlete
 one can run:
-
 ```{r, warning=FALSE, echo = TRUE, message=FALSE}
 fit_mixed = glmer(injury ~ load + (1 | p_id), family = "binomial", data = d)
 ```
 
-For a mixed model with binomial distribution, random intercept and random slope per athlete
-
+For a mixed model with binomial distribution, random intercept and random slope per athlete:
 ```{r, warning=FALSE, echo = TRUE, message=FALSE}
 fit_mixed_slope = glmer(injury ~ load + (load | p_id), family = "binomial", data = d)
 ```
@@ -160,7 +164,6 @@ Finally, our splines model with knots placed where we think they should be, base
 Note that GLMMs can take some time to run.
 In this example we use an intercept-only model, 
 as the random slope model failed to converge.
-
 ```{r, warning=FALSE, echo = TRUE, message=FALSE}
 fit_mixed_splines = glmer(injury ~ rcs(load, c(500, 1500, 2500)) + (1 | p_id), family = "binomial", data = d)
 ```
@@ -169,7 +172,6 @@ fit_mixed_splines = glmer(injury ~ rcs(load, c(500, 1500, 2500)) + (1 | p_id), f
 
 Since we now have the random effect, we must set the example data to a fixed athlete as our example
 we make a new object name for this dataset here, so we don't overwrite our original data object.
-
 ```{r, warning=FALSE, echo = TRUE, message=FALSE}
 pred_data_mixed = d
 pred_data_mixed$p_id = 1
@@ -177,14 +179,13 @@ pred_data_mixed$p_id = 1
 
 For GLMM, we use the `predictInterval()` function that also predict the confidence intervals. 
 This is why we loaded the `merTools` package. 
-`predictInterval()` can't be used on anything but a `glmer()`-created object.
+`predictInterval()` can't be used on anything but a `glmer()`-created object from the `lme4`-package.
 Note that estimating the confidence intervals might take some time.
-
 ```{r, warning=FALSE, echo = TRUE, message=FALSE}
 pred_load_mixed_ci = predictInterval(fit_mixed_splines, ignore.fixed.terms = 1, type = "probability", newdata = pred_data_mixed)
 ```
 
-We add the load data we used for predictions to our predicted values
+We add the load data we used for predictions to our predicted values:
 ```{r, warning=FALSE, echo = TRUE, message=FALSE}
 pred_load_mixed_ci$load = pred_data_mixed$load
 ```
@@ -213,7 +214,7 @@ pred_load_mixed_distinct = predictInterval(fit_mixed_splines,
 pred_load_mixed_distinct$load = pred_data_distinct$load
 ```
 
-Final plot.
+Final plot:
 ```{r, warning=FALSE, echo = TRUE, message=FALSE}
 ggplot(pred_load_mixed_distinct, aes(x = load, y = fit, min = lwr, max = upr)) +
   geom_line() +

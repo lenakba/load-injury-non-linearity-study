@@ -2,10 +2,10 @@
 title: "Performing Fractional Polynomials in R"
 author: "Lena Kristin Bache-Mathiesen"
 output:
-  pdf_document:
+  html_document:
     toc: yes
   word_document: default
-  html_document:
+  pdf_document:
     toc: yes
 editor_options:
   chunk_output_type: console
@@ -31,18 +31,26 @@ library(lme4) # package for mixed model functions
 library(merTools) # a sister-package to lme4 for extra functions on mixed models
 ```
 
-Next step is to load your data. At the minimum, your data should have
-\begin{itemize}
-\item one column for load, measured in any metric (such as sRPE, GPS measures or ACWR)
-\item one column for injury, must either be a logical variable (TRUE/FALSE) or coded (0 for no injury, 1 for injury)
-   to work in our logistic regression model.
-\item one column for athlete ID, coupling the load values and injuries to the right person
-\end{itemize}
+Next step is to load your data. Here, we used the d_example_guide.rds data available from the GitHub repository. 
+It is simulated from football data for the example to be reproducible.
+The object "d" in the r-code below can be replaced with your own data. 
+At the minimum, your data should have:
+<ul>
+ <li>one column for load, measured in any metric (such as sRPE, GPS measures or ACWR)</li>
+ <li>one column for injury, must either be a logical variable (TRUE/FALSE) or coded (0 for no injury, 1 for injury) to 
+     work in our logistic regression model.</li>
+ <li> one column for athlete ID, coupling the load values and injuries to the right person</li>
+</ul>
+
+<!-- Latex Version: -->
+<!-- \begin{itemize} -->
+<!-- \item one column for load, measured in any metric (such as sRPE, GPS measures or ACWR) -->
+<!-- \item one column for injury, must either be a logical variable (TRUE/FALSE) or coded (0 for no injury, 1 for injury) -->
+<!--    to work in our logistic regression model. -->
+<!-- \item one column for athlete ID, coupling the load values and injuries to the right person -->
+<!-- \end{itemize} -->
 
 ```{r load data, warning=FALSE, echo = TRUE, message=FALSE}
-# here, we used the d_example_guide.rds data, simulated from football data, 
-# for the example to be reproducible, but go ahead and 
-# replace the object "d" with your own data. 
 d = readRDS("d_example_guide.rds")
 ```
 
@@ -55,9 +63,8 @@ fit_logistic = glm(injury ~ load, data = d)
 
 Running `fit_logistic` or `summary(fit_logistic)`  will provide us the results and information from the fit.
 
-Fitting load with fractional polynomial terms, we can run
-(note that it may take a little time):
-
+Fitting load with fractional polynomial terms, we can run the code below.
+Note that it may take a little time.
 ```{r, warning=FALSE, echo = TRUE, message=FALSE}
 fit_fp = mfp(injury ~ fp(load), data = d, family = "binomial")
 ```
@@ -76,7 +83,6 @@ fit_summary = summary(fit_fp)
 ```
 It's possible to access different data from the fit
 For example, the aic, or the coefficients, to use them later:
-
 ```{r, warning=FALSE, echo = TRUE, message=FALSE}
 fit_summary$aic
 fit_summary$coefficients
@@ -84,15 +90,14 @@ fit_summary$coefficients
 
 ### Visualization
 
-We can interpret our results numerically, but it may still be useful to
+With fractional polynomials, we can interpret our results numerically, but it may still be useful to
 create a figure of the predictions to see the relationship shape.
 
 In a case where multiple variables have been included in the dataset, 
 a new dataset needs to be created where the other variables have been 
-set to a constant parameter, such as using the mean age.
+set to a constant parameter, such as the mean age.
 
 We make a new object name for this dataset here, so we don't overwrite our original data object:
-
 ```{r, warning=FALSE, echo = TRUE, message=FALSE}
 pred_data = d
 pred_data$age = 17
@@ -100,7 +105,6 @@ pred_data$age = 17
 
 We then add our data to the argument, `newdata`  in the `predict()` command. The argument `type = "response"` means 
 we will receive probability of injury instead of logodds of injury.
-
 ```{r, warning=FALSE, echo = TRUE, message=FALSE}
 pred_load = predict(fit_fp, type = "response", newdata = pred_data)
 ```
@@ -112,8 +116,7 @@ pred_data$yhat = pred_load
 ```
 
 We loaded the `tidyverse` package, which includes the `ggplot2` package.
-A `ggplot2`-plot of the simplest, default form:
-
+To create a simple form of `ggplot2`-plot:
 ```{r, warning=FALSE, echo = TRUE, message=FALSE}
 ggplot(pred_data, aes(x = load, y = yhat)) +
   geom_line() +
@@ -128,19 +131,17 @@ modelled a U-shaped relationship for the example data.
 
 A mixed effects logistic regression model is a bit more complicated
 most notably, because running a general linear mixed model (GLMM) 
-isn't part of base R. Here, we use the `lme4` package. 
+isn't part of base R. Here we use the `lme4` package for mixed models. 
 Not everything in base R or other packages is compatible with the `lme4` package. 
 Most critically, the `mfp()` package for running fractional polynomials are not compatible with the `lme4` package. 
 
 For a mixed model with binomial distribution and random intercept per athlete
 one can run:
-
 ```{r, warning=FALSE, echo = TRUE, message=FALSE}
 fit_mixed = glmer(injury ~ load + (1 | p_id), family = "binomial", data = d)
 ```
 
 For a mixed model with binomial distribution, random intercept and random slope per athlete
-
 ```{r, warning=FALSE, echo = TRUE, message=FALSE}
 fit_mixed_slope = glmer(injury ~ load + (load | p_id), family = "binomial", data = d)
 ```
@@ -149,16 +150,14 @@ Since running the `mfp()`-function won't work inside `glmer()`, we need another 
 One solution would be manually model every possible incarnation 
 of an FP2 model and manually determine the best fit.
 
-Here we've made an automatized solution
-
-Below is a function, glmer_fp() that searches for the best FP fit in a standard regression model 
-with the mfp-function we used earlier. The FP-formula that was found to be the best one 
-is then extracted from the standard model and run in a random effects model using glmer().
-the default is a logistic regression (binomial distribution of outcome measure)
+Here we've made an automatized solution. Below is a function, 
+`glmer_fp()` that searches for the best FP fit in a standard regression model 
+with the `mfp`-function we used earlier. The FP-formula that was found to be the best one 
+is then extracted from the standard model and run in a random effects model using `glmer()`.
+the default is a logistic regression (binomial distribution of outcome measure).
 
 The function was created using `tidyverse`, `rlang` (which is why we loaded these at the top), 
 the `lme4` and `mfp` package.
-
 ```{r, warning=FALSE, echo = TRUE, message=FALSE}
 # the function has the following arguments:
 # d                 The dataset with the load and injury variable
@@ -208,8 +207,7 @@ AIC(fit_mixed)
 AIC(fit_mixed_intercept)
 ```
 
-As seen above, in the example data, the random intercept model had better fit
-
+As seen above, the random intercept model had the lowest AIC and therefore the better fit.
 ### Visualization
 
 Since we now have the random effect, we must set the example data to a fixed athlete as our example.
@@ -221,7 +219,7 @@ pred_data_mixed$p_id = 1
 
 For GLMM, we use the `predictInterval()` function that also predict the confidence intervals. 
 This is why we loaded the `merTools` package. 
-`predictInterval()` can't be used on anything but a `glmer()`-created object.
+`predictInterval()` can't be used on anything but a `glmer()`-created object from the `lme4`-package.
 Note that estimating the confidence intervals might take some time. Code below:
 ```{r, warning=FALSE, echo = TRUE, message=FALSE}
 pred_load_mixed_ci = predictInterval(fit_mixed_intercept, ignore.fixed.terms = 1, type = "probability", newdata = pred_data_mixed)
@@ -254,7 +252,7 @@ pred_load_mixed_distinct = predictInterval(fit_mixed_intercept,
 pred_load_mixed_distinct$load = pred_data_distinct$load
 ```
 
-Final plot.
+Final plot:
 ```{r, warning=FALSE, echo = TRUE, message=FALSE}
 ggplot(pred_load_mixed_distinct, aes(x = load, y = fit, min = lwr, max = upr)) +
   geom_line() +
