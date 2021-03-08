@@ -2,10 +2,10 @@
 title: "Performing Fractional Polynomials in R"
 author: "Lena Kristin Bache-Mathiesen"
 output:
-  html_document:
+  pdf_document:
     toc: yes
   word_document: default
-  pdf_document:
+  html_document:
     toc: yes
 editor_options:
   chunk_output_type: console
@@ -209,6 +209,7 @@ AIC(fit_mixed_intercept)
 ```
 
 As seen above, the random intercept model had the lowest AIC and therefore the better fit.
+
 ## Visualization
 
 Since we now have the random effect, we must set the example data to a fixed athlete as our example.
@@ -223,7 +224,10 @@ This is why we loaded the `merTools` package.
 `predictInterval()` can't be used on anything but a `glmer()`-created object from the `lme4`-package.
 Note that estimating the confidence intervals might take some time. Code below:
 ```{r, warning=FALSE, echo = TRUE, message=FALSE}
-pred_load_mixed_ci = predictInterval(fit_mixed_intercept, ignore.fixed.terms = 1, type = "probability", newdata = pred_data_mixed)
+pred_load_mixed_ci = predictInterval(fit_mixed_intercept, 
+                                     ignore.fixed.terms = 1, 
+                                     type = "probability", 
+                                     newdata = pred_data_mixed)
 ```
 
 We add the load data we used for predictions to our predicted values:
