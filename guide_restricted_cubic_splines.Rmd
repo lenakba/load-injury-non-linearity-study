@@ -2,11 +2,10 @@
 title: "Performing Restricted Cubic Splines in R"
 author: "Lena Kristin Bache-Mathiesen"
 output:
-  pdf_document:
+  html_document:
     toc: yes
   word_document: default
-  html_document:
-    theme: flatly
+  pdf_document:
     toc: yes
 editor_options:
   chunk_output_type: console
@@ -41,7 +40,8 @@ Next step is to load your data. At the minimum, your data should have
 \end{itemize}
 
 ```{r load data, warning=FALSE, echo = TRUE, message=FALSE}
-# here, we used the d_example_guide.rds data, simulated from football data, for the example to be reproducible, but go ahead and 
+# here, we used the d_example_guide.rds data, simulated from football data, 
+# for the example to be reproducible, but go ahead and 
 # replace the object "d" with your own data. 
 d = readRDS("d_example_guide.rds")
 ```
@@ -132,7 +132,7 @@ ggplot(pred_data, aes(x = load, y = yhat)) +
 ```
 
 Mapping the load values to the predicted probabilities (figure above) showed that the splines
-modeled a U-shaped relationship for the example data.
+modelled a U-shaped relationship for the example data.
 
 
 # Mixed Effects Regression Model
@@ -189,36 +189,37 @@ We add the load data we used for predictions to our predicted values
 pred_load_mixed_ci$load = pred_data_mixed$load
 ```
 
-For a simple ggplot2-plot with confidence intervals:
+For a simple `ggplot2`-plot with confidence intervals:
 ```{r, warning=FALSE, echo = TRUE, message=FALSE}
 ggplot(pred_load_mixed_ci, aes(x = load, y = fit, min = lwr, max = upr)) +
   geom_line() +
   geom_ribbon(alpha = 0.3) + # alpha is for transparency
   xlab("sRPE") +
-  ylab("Probability of Injury")
+  ylab("Probability of Injury") +
+  theme_light() # a simple way to clean up 
 ```
 
 If you don't want multiple predictions per load value, you can predict based on a distinct set of values. 
-
 ```{r, warning=FALSE, echo = TRUE, message=FALSE}
 pred_data_distinct = as.data.frame(unique(d$load))
 pred_data_distinct$p_id = 1
 
 # the names need to be exactly the same as the dataset used to fit the model
 names(pred_data_distinct)[1] = "load"
-pred_load_mixed_distinct = predictInterval(fit_mixed_splines, ignore.fixed.terms = 1, type = "probability", newdata = pred_data_distinct)
+pred_load_mixed_distinct = predictInterval(fit_mixed_splines, 
+                                           ignore.fixed.terms = 1, 
+                                           type = "probability", 
+                                           newdata = pred_data_distinct)
 pred_load_mixed_distinct$load = pred_data_distinct$load
 ```
 
-We run a new figure below with `theme()` code to improve the look.
-
+Final plot.
 ```{r, warning=FALSE, echo = TRUE, message=FALSE}
 ggplot(pred_load_mixed_distinct, aes(x = load, y = fit, min = lwr, max = upr)) +
   geom_line() +
   geom_ribbon(alpha = 0.3) +
   xlab("sRPE") +
   ylab("Probability of Injury") +
-  theme(panel.background = element_blank(),  # removes background panel
-        axis.line = element_line(colour = "black"))
+  theme_light()
 ```
 
