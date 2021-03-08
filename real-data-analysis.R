@@ -692,10 +692,10 @@ ggplot(d_preds_injury0_full, aes(x = load_values, y = yhat)) +
         legend.title = element_blank())
 
 #------------------------- Figure made for article with handball only
-d_preds_load_injury0_handball = d_preds_load_injury0_handball %>% mutate(injury = "(A) Current Day (472 Injuries)")
+d_preds_load_injury0_handball = d_preds_load_injury0_handball %>% mutate(injury = "(A) Same Day (472 Injuries)")
 d_preds_load_handball = d_preds_load_handball %>% mutate(injury = "(B) Next 4 Days (1 136 Injuries)")
 
-d_preds_load_injury0_handball_linear = d_preds_load_injury0_handball_linear %>% mutate(injury = "(A) Current Day (472 Injuries)")
+d_preds_load_injury0_handball_linear = d_preds_load_injury0_handball_linear %>% mutate(injury = "(A) Same Day (472 Injuries)")
 d_preds_load_handball_linear = d_preds_load_handball_linear %>% mutate(injury = "(B) Next 4 Days (1 136 Injuries)")
 
 d_preds_sig = bind_rows(d_preds_load_injury0_handball, d_preds_load_handball) 
