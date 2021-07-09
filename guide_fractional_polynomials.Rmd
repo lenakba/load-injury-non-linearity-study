@@ -28,7 +28,9 @@ library(tidyverse) # for creating figures, and for a self-made function we'll ne
 library(rlang) # for creating functions with tidyverse syntax
 library(mfp) # the mfp package has functions for automatic determination of FP
 library(lme4) # package for mixed model functions
-library(merTools) # a sister-package to lme4 for extra functions on mixed models
+library(sjPlot) # for plotting predicted values with splines
+library(ggeffects) # for model predictions with splines
+library(clubSandwich) # for cluster-robust confidence intervals
 ```
 
 Next step is to load your data. Here we used the d_example_guide.rds data available from the GitHub repository. It is simulated 
@@ -43,6 +45,11 @@ can be replaced with your own data. At the minimum, your data should have:
 
 ```{r load data, warning=FALSE, echo = TRUE, message=FALSE}
 d = readRDS("d_example_guide.rds")
+
+# For model predictions to be calculated by
+# the ggeffects package, categorical variables
+# must be factors, not the character class
+d = d %>% mutate(p_id = as.factor(p_id))
 ```
 
 # Standard Logistic Regression
@@ -91,35 +98,14 @@ exp(coef(fit_fp))
 With fractional polynomials, we can interpret our results numerically, but it may still be useful to
 create a figure of the predictions to see the relationship shape.
 
-In a case where multiple variables have been included in the dataset, 
-a new dataset needs to be created where the other variables have been 
-set to a constant parameter, such as the mean age.
-
-We make a new object name for this dataset here, so we don't overwrite our original data object:
+The `sjPlot` package has a handy function
+to create a simple form of `ggplot2`-plot.
+Unfortunately, the syntax is not compatible with that in the `mfp`-package
+we therefore have to write out our model manually
+by checking the formula in the object `fit_fp` we created previously.
 ```{r, warning=FALSE, echo = TRUE, message=FALSE}
-pred_data = d
-pred_data$age = 17
-```
-
-We then add our data to the argument, `newdata`  in the `predict()` command. The argument `type = "response"` means 
-we will receive probability of injury instead of logodds of injury.
-```{r, warning=FALSE, echo = TRUE, message=FALSE}
-pred_load = predict(fit_fp, type = "response", newdata = pred_data)
-```
-
-To create a figure from our predictions, 
-we add the predictions to our dataset with the load values used for predictions:
-```{r, warning=FALSE, echo = TRUE, message=FALSE}
-pred_data$yhat = pred_load
-```
-
-We loaded the `tidyverse` package, which includes the `ggplot2` package.
-To create a simple form of `ggplot2`-plot:
-```{r, warning=FALSE, echo = TRUE, message=FALSE}
-ggplot(pred_data, aes(x = load, y = yhat)) +
-  geom_line() +
-  xlab("sRPE") +
-  ylab("Probability of Injury")
+fit_fp_manual = glm(injury ~ load + I(((load + 1)/100)^3), data = d, family = "binomial")
+plot_model(fit_fp_manual, type = "pred", terms = "load [all]")
 ```
 
 Mapping the load values to the predicted probabilities (figure above) showed that the polynomials
@@ -211,57 +197,27 @@ As seen above, the random intercept model had the lowest AIC and therefore the b
 
 ## Visualization
 
-Since we now have the random effect, we must set the example data to a fixed athlete as our example.
-we make a new object name for this dataset here, so we don't overwrite our original data object:
+We can visualize in the same manner as the model without random effects
+Again, we have to write out our fit manually to do so.
 ```{r, warning=FALSE, echo = TRUE, message=FALSE}
-pred_data_mixed = d
-pred_data_mixed$p_id = 1
+fit_mixed_manual = glmer(injury ~ load + I(((load + 1)/100)^3) + (1|p_id), 
+                         data = d,  family = "binomial")
 ```
 
-For GLMM, we use the `predictInterval()` function that also predict the confidence intervals. 
-This is why we loaded the `merTools` package. 
-`predictInterval()` can't be used on anything but a `glmer()`-created object from the `lme4`-package.
-Note that estimating the confidence intervals might take some time. Code below:
-```{r, warning=FALSE, echo = TRUE, message=FALSE}
-pred_load_mixed_ci = predictInterval(fit_mixed_intercept, 
-                                     ignore.fixed.terms = 1, 
-                                     type = "probability", 
-                                     newdata = pred_data_mixed)
-```
+Since this is a mixed model, we can calculate cluster-robust
+confidence intervals which take into account the uncertainty stemming from random effects variance.
+We can do this by calculating the predictions with `ggpredict()`
+and specifying the function for obtaining the variance-covariance matrix from the model.
+We use `vcovCR()` from the `clubSandwich` package and specify the clusters in a list in the `vcov.args` argument.
 
-We add the load data we used for predictions to our predicted values:
 ```{r, warning=FALSE, echo = TRUE, message=FALSE}
-pred_load_mixed_ci$load = pred_data_mixed$load
-```
-
-For a simple `ggplot2`-plot with confidence intervals:
-```{r, warning=FALSE, echo = TRUE, message=FALSE}
-ggplot(pred_load_mixed_ci, aes(x = load, y = fit, min = lwr, max = upr)) +
-  geom_line() +
-  geom_ribbon(alpha = 0.3) + # alpha is for transparency
-  theme_light() + # a simple way to clean up 
-  xlab("sRPE") +
-  ylab("Probability of Injury")
-```
-
-If you don't want multiple predictions per load value, you can predict based on a distinct set of values. Code below:
-```{r, warning=FALSE, echo = TRUE, message=FALSE}
-pred_data_distinct = as.data.frame(unique(d$load))
-pred_data_distinct$p_id = 1
-# the names need to be exactly the same as the dataset used to fit the model
-names(pred_data_distinct)[1] = "load"
-pred_load_mixed_distinct = predictInterval(fit_mixed_intercept, 
-                                           ignore.fixed.terms = 1, type = "probability", 
-                                           newdata = pred_data_distinct)
-pred_load_mixed_distinct$load = pred_data_distinct$load
-```
-
-Final plot:
-```{r, warning=FALSE, echo = TRUE, message=FALSE}
-ggplot(pred_load_mixed_distinct, aes(x = load, y = fit, min = lwr, max = upr)) +
-  geom_line() +
-  geom_ribbon(alpha = 0.3) +
-  theme_light() + 
-  xlab("sRPE") +
-  ylab("Probability of Injury")
+preds = ggpredict(
+  fit_mixed_manual, 
+  "load [all]", 
+  vcov.fun = "vcovCR", 
+  vcov.type = "CR0", 
+  vcov.args = list(p_id = d$p_id),
+  type = "re.zi"
+)
+plot(preds)
 ```
