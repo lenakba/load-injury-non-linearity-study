@@ -28,7 +28,9 @@ First, load required packages.
 library(ggplot2) # for creating figures
 library(rms) # Harrell's rms package includes the functions we need for splines
 library(lme4) # package for mixed model functions
-library(merTools) # a sister-package to lme4 for extra functions on mixed models
+library(sjPlot) # for plotting predicted values with splines
+library(ggeffects) # for model predictions with splines
+library(clubSandwich) # for cluster-robust confidence intervals
 ```
 
 Next step is to load your data. Here we used the d_example_guide.rds data available from the GitHub repository. It is simulated 
@@ -106,34 +108,10 @@ The p-values can be used and understood as usual.
 
 The best way to interpret splines is by visualizing predictions. 
 
-In a case where multiple variables have been included in the dataset, 
-a new dataset needs to be created where the other variables have been 
-set to a constant parameter, such as using the mean age.
-We make a new object name for this dataset here, so we don't overwrite our original data object.
-
-```{r, warning=FALSE, echo = TRUE, message=FALSE}
-pred_data = d
-pred_data$age = 17
-```
-
-We then add our data to the argument, `newdata`  in the `predict()` command. The argument `type = "response"` means 
-we will receive probability of injury instead of logodds of injury:
-```{r, warning=FALSE, echo = TRUE, message=FALSE}
-pred_load = predict(fit_splines_loc, type = "response", newdata = pred_data)
-```
-
-To create a figure from our predictions, we must add the predictions to our dataset with the load values used for predictions.
-```{r, warning=FALSE, echo = TRUE, message=FALSE}
-pred_data$yhat = pred_load
-```
-
-We loaded the `tidyverse` package, which includes the `ggplot2` package.
+The `sjPlot` package has a handy function
 To create a simple form of `ggplot2`-plot:
 ```{r, warning=FALSE, echo = TRUE, message=FALSE}
-ggplot(pred_data, aes(x = load, y = yhat)) +
-  geom_line() +
-  xlab("sRPE") +
-  ylab("Probability of Injury")
+plot_model(fit_splines_loc, type = "pred", terms = "load [all]")
 ```
 
 Mapping the load values to the predicted probabilities (figure above) showed that the splines
@@ -169,57 +147,21 @@ fit_mixed_splines = glmer(injury ~ rcs(load, c(500, 1500, 2500)) + (1 | p_id), f
 
 ## Visualization
 
-Since we now have the random effect, we must set the example data to a fixed athlete as our example
-we make a new object name for this dataset here, so we don't overwrite our original data object.
+A visualization can be created in the same manner as above with `plot_model()`
+However, since this is a mixed model, we can calculate cluster-robust
+confidence intervals which take into account the uncertainty stemming from random effects variance.
+We can do this by calculating the predictions with `ggpredict()`
+and specifying the function for obtaining the variance-covariance matrix from the model.
+We use `vcovCR()` from the `clubSandwich` package and specify the clusters in a list in the `vcov.args` argument.
 ```{r, warning=FALSE, echo = TRUE, message=FALSE}
-pred_data_mixed = d
-pred_data_mixed$p_id = 1
-```
-
-For GLMM, we use the `predictInterval()` function that also predict the confidence intervals. 
-This is why we loaded the `merTools` package. 
-`predictInterval()` can't be used on anything but a `glmer()`-created object from the `lme4`-package.
-Note that estimating the confidence intervals might take some time.
-```{r, warning=FALSE, echo = TRUE, message=FALSE}
-pred_load_mixed_ci = predictInterval(fit_mixed_splines, ignore.fixed.terms = 1, type = "probability", newdata = pred_data_mixed)
-```
-
-We add the load data we used for predictions to our predicted values:
-```{r, warning=FALSE, echo = TRUE, message=FALSE}
-pred_load_mixed_ci$load = pred_data_mixed$load
-```
-
-For a simple `ggplot2`-plot with confidence intervals:
-```{r, warning=FALSE, echo = TRUE, message=FALSE}
-ggplot(pred_load_mixed_ci, aes(x = load, y = fit, min = lwr, max = upr)) +
-  geom_line() +
-  geom_ribbon(alpha = 0.3) + # alpha is for transparency
-  xlab("sRPE") +
-  ylab("Probability of Injury") +
-  theme_light() # a simple way to clean up 
-```
-
-If you don't want multiple predictions per load value, you can predict based on a distinct set of values. 
-```{r, warning=FALSE, echo = TRUE, message=FALSE}
-pred_data_distinct = as.data.frame(unique(d$load))
-pred_data_distinct$p_id = 1
-
-# the names need to be exactly the same as the dataset used to fit the model
-names(pred_data_distinct)[1] = "load"
-pred_load_mixed_distinct = predictInterval(fit_mixed_splines, 
-                                           ignore.fixed.terms = 1, 
-                                           type = "probability", 
-                                           newdata = pred_data_distinct)
-pred_load_mixed_distinct$load = pred_data_distinct$load
-```
-
-Final plot:
-```{r, warning=FALSE, echo = TRUE, message=FALSE}
-ggplot(pred_load_mixed_distinct, aes(x = load, y = fit, min = lwr, max = upr)) +
-  geom_line() +
-  geom_ribbon(alpha = 0.3) +
-  xlab("sRPE") +
-  ylab("Probability of Injury") +
-  theme_light()
+preds = ggpredict(
+  fit_mixed_splines, 
+  "load [all]", 
+  vcov.fun = "vcovCR", 
+  vcov.type = "CR0", 
+  vcov.args = list(p_id = d$p_id),
+  type = "re.zi"
+  )
+plot(preds)
 ```
 
