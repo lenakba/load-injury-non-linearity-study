@@ -10,7 +10,9 @@
 library(ggplot2) # for creating figures
 library(rms) # Harrell's rms package includes the functions we need for splines
 library(lme4) # package for mixed model functions
-library(merTools) # a sister-package to lme4 for extra functions on mixed models
+library(sjPlot) # for plotting predicted values with splines
+library(ggeffects) # for model predictions with splines
+library(clubSandwich) # for cluster-robust confidence intervals
 
 # load your data. At the minimum, your data should have 
 # - one column for load, measured in any metric (such as sRPE, GPS measures or ACWR)
@@ -55,24 +57,9 @@ summary(fit_splines_loc)
 # The p-values can be used and understood as usual.
 # The best way to interpret splines is by visualizing predictions. 
 
-# in a case where multiple variables have been included in the dataset, 
-# a new dataset needs to be created where the other variables have been 
-# set to a constant parameter, i.e. using the mean age
-# we make a new object name for this dataset here, so we don't overwrite our original data object
-pred_data = d
-pred_data$age = 17
-# we then add our data to the argument, newdata. type = "response" means 
-# we will receive probability of injury instead of logodds of injury.
-pred_load = predict(fit_splines_loc, type = "response", newdata = pred_data)
-
-# to create a figure from our predictions, 
-# let's add the predictions to our dataset with the load values used for predictions
-pred_data$yhat = pred_load
-
-# we loaded the tidyverse package, which includes the ggplot2 package.
-# ggplot of the simplest, default form
-ggplot(pred_data, aes(x = load, y = yhat)) +
-  geom_line()
+# the sjPlot package has a handy function 
+# which plots the model predictions with confidence intervals using succint code
+plot_model(fit_splines_loc, type = "pred", terms = "load [all]")
 
 # Mapping the load values to the predicted probabilities showed that the splines
 # modeled a U-shaped relationship in the example data.
@@ -91,34 +78,20 @@ fit_mixed_slope = glmer(injury ~ load + (load | p_id), family = "binomial", data
 # in this example we use an intercept-only model, as the random slope model failed to converge
 fit_mixed_splines = glmer(injury ~ rcs(load, c(500, 1500, 2500)) + (1 | p_id), family = "binomial", data = d)
 
-# now for predictions
-# since we now have the random effect, we must set the exampledata to a fixed athlete as our example
-# we make a new object name for this dataset here, so we don't overwrite our original data object
-pred_data_mixed = d
-pred_data_mixed$p_id = 1
+# a visualization can be created in the same manner as above with plot_model
+# However, since this is a mixed model, we can calculate cluster-robust
+# confidence intervals which take into account the uncertainty stemming from random effects variance
+# we can do this by calculating the predictions with ggeffects
+# and specifying the function for obtaining the variance-covariance matrix from the model
+# We use vcovCR() from the clubSandwich package and specify the clusters in a list in the vcov.args argument
+preds = ggpredict(
+  fit_mixed_splines, 
+  "load [all]", 
+  vcov.fun = "vcovCR", 
+  vcov.type = "CR0", 
+  vcov.args = list(p_id = d$p_id),
+  type = "re.zi"
+  )
 
-# this time, we use the predictInterval() function that also predict the confidence intervals. 
-# this is why we loaded the merTools package. predictInterval() can't be used on anything but a glmer()-created object
-# note that estimating the confidence intervals might take some time
-pred_load_mixed_ci = predictInterval(fit_mixed_splines, ignore.fixed.terms = 1, type = "probability", newdata = pred_data_mixed)
-
-# we add the load data we used for predictions to our predicted values
-pred_load_mixed_ci$load = pred_data_mixed$load
-
-# we plot, now with confidence intervals
-ggplot(pred_load_mixed_ci, aes(x = load, y = fit, min = lwr, max = upr)) +
-  geom_line() +
-  geom_ribbon(alpha = 0.3) # alpha is for transperancy
-
-### if you don't want multiple predictions per load value, you can predict based on a distinct set of values
-pred_data_distinct = as.data.frame(unique(d$load))
-pred_data_distinct$p_id = 1
-# the names need to be exactly the same as the dataset used to fit the model
-names(pred_data_distinct)[1] = "load"
-pred_load_mixed_distinct = predictInterval(fit_mixed_splines, ignore.fixed.terms = 1, type = "probability", newdata = pred_data_distinct)
-pred_load_mixed_distinct$load = pred_data_distinct$load
-
-ggplot(pred_load_mixed_distinct, aes(x = load, y = fit, min = lwr, max = upr)) +
-  geom_line() +
-  geom_ribbon(alpha = 0.3)
+plot(preds)
 
