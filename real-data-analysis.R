@@ -15,6 +15,9 @@ library(lme4) # for random effects modeling
 library(slider) # for calculating mean and ewma over sliding windows (of equal or unequal size)
 library(mice) # for pooling an imputed model
 library(merTools) # tools for working with merMod objects from lme4 package
+library(ggeffects) # for predictions
+library(clubSandwich) # for cluster-robust CIs
+library(insight) # for predictions on splines/FPs
 
 
 # so we don't have to deal with scientific notations
@@ -351,6 +354,22 @@ dev.off()
 
 #--------------------------------------------------------------------Modeling-------------------------------------------------------------------
 
+l_u19 = l_u19 %>% map(. %>% mutate(p_id = as.factor(p_id)))
+l_u19_training_only = l_u19_training_only %>% map(. %>% mutate(p_id = as.factor(p_id)))
+l_handball_training_only = l_handball_training_only %>% map(. %>% mutate(p_id = as.factor(p_id)))
+l_acwr_u19_training_only = l_acwr_u19_training_only %>% map(. %>% mutate(p_id = as.factor(p_id)) %>% rename(load = acwr_7_21))
+l_acwr_handball_training_only = l_acwr_handball_training_only %>% map(. %>% mutate(p_id = as.factor(p_id)) %>% rename(load = acwr_7_21))
+l_acwr_u19 = l_acwr_u19 %>% map(. %>% mutate(p_id = as.factor(p_id)) %>% rename(load = acwr_7_21))
+l_acwr_handball = l_acwr_handball %>% map(. %>% mutate(p_id = as.factor(p_id)) %>% rename(load = acwr_7_21))
+l_acwr_mp_u19 = l_acwr_mp_u19 %>% map(. %>% mutate(p_id = as.factor(p_id)) %>% rename(load = acwr))
+l_acwr_mp_handball = l_acwr_mp_handball %>% map(. %>% mutate(p_id = as.factor(p_id)) %>% rename(load = acwr))
+
+l_strom = l_strom %>% map(. %>% mutate(position = as.factor(position)))
+l_strom_training_only = l_strom_training_only %>% map(. %>% mutate(position = as.factor(position)))
+l_acwr_strom_training_only = l_acwr_strom_training_only %>% map(. %>% mutate(position = as.factor(position)) %>% rename(load = acwr_7_21))
+l_acwr_strom = l_acwr_strom %>% map(. %>% mutate(position = as.factor(position)) %>% rename(load = acwr_7_21))
+l_acwr_mp_strom = l_acwr_mp_strom %>% map(. %>% mutate(position = as.factor(position)) %>% rename(load = acwr)) 
+
 # Remember our objects. l_handball and l_u19 have unmodified loads, and difference-adjusted loads.
 # l_acwr_handball and l_acwr_u19 has daily ACWR. l_acwr_mp_u19 and l_acwr_mp_handball have micro cycle ACWR.
 
@@ -504,10 +523,10 @@ fit_acwr_mp_strom_linear = l_acwr_mp_strom %>% map(. %>% rename(load = acwr)) %>
 # This is the predict-than-combine method
 # function for predicting values on a list of fitted models om imputed datasets
 # the output is the mean predicted value of each prediction
-predict_on_imputed = function(fit, d_example){
+predict_on_imputed = function(fit_list, d_example){
   
-  l_pred = fit %>% map(predict, type = "response", newdata = d_example)
-  l_conf = fit %>% map(predictInterval, newdata = d_example, ignore.fixed.terms = 1, type = "probability")
+  l_pred = fit_list %>% map(predict, type = "response", newdata = d_example)
+  l_conf = fit_list %>% map(predictInterval, newdata = d_example, ignore.fixed.terms = 1, type = "probability")
   
   # unwrap our list to a table
   d_pred = do.call(bind_cols, l_pred) %>% as_tibble()
@@ -544,51 +563,9 @@ fake_loads = function(x){
 # make sample data
 d_sample_loads_u19 = d_base %>% mutate(load = seq(min(l_u19$`5`$load, na.rm = TRUE), 3000, length.out=25))
 d_sample_loads_handball = d_base %>% mutate(load = fake_loads(l_handball$`5`$load))
-d_sample_loads_strom = d_base_strom %>% mutate(load = fake_loads(l_strom$`5`$load) )
-d_sample_acwr = d_base %>% mutate(load = seq(min(l_u19$`5`$load, na.rm = TRUE), 2.5, length.out=25))
-d_sample_acwr_strom = d_base_strom %>% mutate(load = seq(min(l_u19$`5`$load, na.rm = TRUE), 2.5, length.out=25))
-
-# u19, injury 0
-d_preds_load_injury0_u19 = predict_on_imputed(fit_load_injury0_u19, d_sample_loads_u19) %>% mutate(load_type = "sRPE")
-d_preds_acwr_7_21_injury0_u19 = predict_on_imputed(fit_acwr_7_21_injury0_u19, d_sample_acwr)  %>% mutate(load_type = "ACWR 7:21")
-
-# u19, injury 1-4 or next mp
-d_preds_load_u19 = predict_on_imputed(fit_load_u19, d_sample_loads_u19) %>% mutate(load_type = "sRPE")
-d_preds_acwr_7_21_u19 = predict_on_imputed(fit_acwr_7_21_u19, d_sample_acwr)  %>% mutate(load_type = "ACWR 7:21")
-d_preds_acwr_mp_u19 = predict_on_imputed(fit_acwr_mp_u19, d_sample_acwr) %>% mutate(load_type = "ACWR 1:3 micro cycles")
-
-# handball, injury 0
-d_preds_load_injury0_handball = predict_on_imputed(fit_load_injury0_handball, d_sample_loads_handball) %>% mutate(load_type = "sRPE")
-d_preds_acwr_7_21_injury0_handball = predict_on_imputed(fit_acwr_7_21_injury0_handball, d_sample_acwr)  %>% mutate(load_type = "ACWR 7:21")
-
-# handball, injury 1-4
-d_preds_load_handball = predict_on_imputed(fit_load_handball, d_sample_loads_handball) %>% mutate(load_type = "sRPE")
-d_preds_acwr_7_21_handball = predict_on_imputed(fit_acwr_7_21_handball, d_sample_acwr)  %>% mutate(load_type = "ACWR 7:21")
-d_preds_acwr_mp_handball = predict_on_imputed(fit_acwr_mp_handball, d_sample_acwr) %>% mutate(load_type = "ACWR 1:3 micro cycles")
-
-# strom, injury 0
-d_preds_load_injury0_strom = predict_on_imputed(fit_load_injury0_strom, d_sample_loads_strom) %>% mutate(load_type = "sRPE")
-d_preds_acwr_7_21_injury0_strom = predict_on_imputed(fit_acwr_7_21_injury0_strom, d_sample_acwr_strom)  %>% mutate(load_type = "ACWR 7:21")
-
-# strom, injury 1-4
-d_preds_load_strom = predict_on_imputed(fit_load_strom, d_sample_loads_strom) %>% mutate(load_type = "sRPE")
-d_preds_acwr_7_21_strom = predict_on_imputed(fit_acwr_7_21_strom, d_sample_acwr_strom)  %>% mutate(load_type = "ACWR 7:21")
-d_preds_acwr_mp_strom = predict_on_imputed(fit_acwr_mp_strom, d_sample_acwr_strom) %>% mutate(load_type = "ACWR 1:3 micro cycles")
-
-
-
-# combine u19 and handball data
-d_preds_u19 = bind_rows(d_preds_load_u19, d_preds_acwr_7_21_u19, d_preds_acwr_mp_u19) %>% mutate(pop = "Football U19")
-d_preds_handball = bind_rows(d_preds_load_handball, d_preds_acwr_7_21_handball, d_preds_acwr_mp_handball) %>% mutate(pop = "Handball")
-d_preds_strom = bind_rows(d_preds_load_strom, d_preds_acwr_7_21_strom, d_preds_acwr_mp_strom) %>% mutate(pop = "Football\nStrømsgodset")
-d_preds = bind_rows(d_preds_u19, d_preds_handball, d_preds_strom)
-
-d_preds_injury0_u19 = bind_rows(d_preds_load_injury0_u19, d_preds_acwr_7_21_injury0_u19) %>% mutate(pop = "Football U19")
-d_preds_injury0_handball = bind_rows(d_preds_load_injury0_handball, d_preds_acwr_7_21_injury0_handball) %>% mutate(pop = "Handball")
-d_preds_injury0_strom = bind_rows(d_preds_load_injury0_strom, d_preds_acwr_7_21_injury0_strom) %>% mutate(pop = "Football\nStrømsgodset")
-d_preds_injury0 = bind_rows(d_preds_injury0_u19, d_preds_injury0_handball)
-
-
+d_sample_loads_strom = d_base_strom %>% mutate(load = fake_loads(l_strom$`5`$load), position = as.factor(position), p_id = as.factor(p_id))
+d_sample_acwr = d_base %>% mutate(load = seq(min(l_acwr_u19$`5`$load, na.rm = TRUE), 2.5, length.out=25))
+d_sample_acwr_strom = d_base_strom %>% mutate(load = seq(min(l_acwr_u19$`5`$load, na.rm = TRUE), 2.5, length.out=25))
 
 #--------------------------------------------linear models
 
@@ -599,7 +576,7 @@ d_preds_acwr_7_21_injury0_u19_linear = predict_on_imputed(fit_acwr_7_21_injury0_
 # u19, injury 1-4 or next mp
 d_preds_load_u19_linear = predict_on_imputed(fit_load_u19_linear, d_sample_loads_u19) %>% mutate(load_type = "sRPE")
 d_preds_acwr_7_21_u19_linear = predict_on_imputed(fit_acwr_7_21_u19_linear, d_sample_acwr)  %>% mutate(load_type = "ACWR 7:21")
-d_preds_acwr_mp_u19_linear = predict_on_imputed(fit_acwr_mp_u19_linear, d_sample_acwr) %>% mutate(load_type = "ACWR 1:3 micro cycles")
+d_preds_acwr_mp_u19_linear = predict_on_imputed(fit_acwr_mp_u19_linear, d_sample_acwr) %>% mutate(load_type = "ACWR 1:3 Match periods")
 
 # handball, injury 0
 d_preds_load_injury0_handball_linear = predict_on_imputed(fit_load_injury0_handball_linear, d_sample_loads_handball) %>% mutate(load_type = "sRPE")
@@ -608,7 +585,7 @@ d_preds_acwr_7_21_injury0_handball_linear = predict_on_imputed(fit_acwr_7_21_inj
 # handball, injury 1-4
 d_preds_load_handball_linear = predict_on_imputed(fit_load_handball_linear, d_sample_loads_handball) %>% mutate(load_type = "sRPE")
 d_preds_acwr_7_21_handball_linear = predict_on_imputed(fit_acwr_7_21_handball_linear, d_sample_acwr)  %>% mutate(load_type = "ACWR 7:21")
-d_preds_acwr_mp_handball_linear = predict_on_imputed(fit_acwr_mp_handball_linear, d_sample_acwr) %>% mutate(load_type = "ACWR 1:3 micro cycles")
+d_preds_acwr_mp_handball_linear = predict_on_imputed(fit_acwr_mp_handball_linear, d_sample_acwr) %>% mutate(load_type = "ACWR 1:3 Match periods")
 
 # strom, injury 0
 d_preds_load_injury0_strom_linear = predict_on_imputed(fit_load_injury0_strom_linear, d_sample_loads_strom) %>% mutate(load_type = "sRPE")
@@ -617,9 +594,9 @@ d_preds_acwr_7_21_injury0_strom_linear = predict_on_imputed(fit_acwr_7_21_injury
 # strom, injury 1-4
 d_preds_load_strom_linear = predict_on_imputed(fit_load_strom_linear, d_sample_loads_strom) %>% mutate(load_type = "sRPE")
 d_preds_acwr_7_21_strom_linear = predict_on_imputed(fit_acwr_7_21_strom_linear, d_sample_acwr_strom)  %>% mutate(load_type = "ACWR 7:21")
-d_preds_acwr_mp_strom_linear = predict_on_imputed(fit_acwr_mp_strom_linear, d_sample_acwr_strom) %>% mutate(load_type = "ACWR 1:3 micro cycles")
+d_preds_acwr_mp_strom_linear = predict_on_imputed(fit_acwr_mp_strom_linear, d_sample_acwr_strom) %>% mutate(load_type = "ACWR 1:3 Match periods")
 
-# combine football and handball data
+# combine u19 and handball data
 d_preds_u19_linear = bind_rows(d_preds_load_u19_linear, d_preds_acwr_7_21_u19_linear, d_preds_acwr_mp_u19_linear) %>% mutate(pop = "Football U-19")
 d_preds_handball_linear = bind_rows(d_preds_load_handball_linear, d_preds_acwr_7_21_handball_linear, d_preds_acwr_mp_handball_linear) %>% mutate(pop = "Handball")
 d_preds_strom_linear = bind_rows(d_preds_load_strom_linear, d_preds_acwr_7_21_strom_linear, d_preds_acwr_mp_strom_linear) %>% mutate(pop = "Football Elite")
@@ -631,21 +608,197 @@ d_preds_injury0_strom_linear = bind_rows(d_preds_load_injury0_strom_linear, d_pr
 d_preds_injury0_linear = bind_rows(d_preds_injury0_u19_linear, d_preds_injury0_handball_linear, d_preds_injury0_strom_linear)
 
 
+fit_glmer = function(data){
+  fit = glmer(injury ~ rcs(load, 3) + age + sex_fac  + (1|p_id), data = data, 
+               family = binomial(link = "logit"))
+  fit
+}
+
+fit_glmer_injury0 = function(data){
+  fit = glmer(injury0 ~ rcs(load, 3) + age + sex_fac  + (1|p_id), data = data, 
+              family = binomial(link = "logit"))
+  fit
+}
+
+fit_glmer_injury_1_4 = function(data){
+  fit = glmer(injury_1_4 ~ rcs(load, 3) + age + sex_fac + (1|p_id), data = data, 
+              family = binomial(link = "logit"))
+  fit
+}
+
+fit_glmer_injury_nextmc = function(data){
+  fit = glmer(injury_nextmc ~ rcs(load, 3) + age + sex_fac + (1|p_id), data = data, 
+              family = binomial(link = "logit"))
+  fit
+}
+
+predict_glmer = function(fit, data_clusters){
+  preds = ggpredict(
+    fit, "load [vec]", 
+    condition = c(age = 17.2, sex_fac = 0, p_id = 101),
+    vcov.fun = "vcovCR", 
+    vcov.type = "CR0", 
+    vcov.args = list(p_id = data_clusters$p_id),
+    type = "re.zi") %>% as.tibble()
+  preds
+}
+
+fit_and_pred = function(data_list, FUN = fit_glmer){
+  fit1 = FUN(data_list[[1]])
+  fit2 = FUN(data_list[[2]])
+  fit3 = FUN(data_list[[3]])
+  fit4 = FUN(data_list[[4]])
+  fit5 = FUN(data_list[[5]])
+  
+  pred1 = predict_glmer(fit1, data_list[[1]]) 
+  pred2 = predict_glmer(fit2, data_list[[2]]) 
+  pred3 = predict_glmer(fit3, data_list[[3]])
+  pred4 = predict_glmer(fit4, data_list[[4]])
+  pred5 = predict_glmer(fit5, data_list[[5]])
+  preds = bind_rows(pred1, pred2, pred3, pred4, pred5)
+  
+  # calc mean preds
+  preds_mean = preds %>% dplyr::select(-group) %>% group_by(x) %>% summarise_all(mean)
+  
+  # rename same as previous methods
+  preds_mean = preds_mean %>% rename(load = x, yhat = predicted, lower = conf.low, upper = conf.high)
+  preds_mean
+}
+
+# make sample data
+d_sample_loads_u19 = d_base %>% mutate(load = seq(min(l_u19$`5`$load, na.rm = TRUE), 3000, length.out=25))
+d_sample_loads_handball = d_base %>% mutate(load = fake_loads(l_handball$`5`$load))
+d_sample_loads_strom = d_base_strom %>% mutate(load = fake_loads(l_strom$`5`$load), position = as.factor(position), p_id = as.factor(p_id))
+d_sample_acwr = d_base %>% mutate(load = seq(min(l_acwr_u19$`5`$load, na.rm = TRUE), 2.5, length.out=25))
+d_sample_acwr_strom = d_base_strom %>% mutate(load = seq(min(l_acwr_u19$`5`$load, na.rm = TRUE), 2.5, length.out=25))
+
+# fit and predict for all scenarios
+vec = d_sample_loads_u19$load
+d_preds_load_injury0_u19 = fit_and_pred(data_list = l_u19_training_only) %>% mutate(load_type = "sRPE")
+d_preds_load_u19 = fit_and_pred(data_list = l_u19, FUN = fit_glmer_injury_1_4) %>% mutate(load_type = "sRPE")
+vec = d_sample_acwr$load
+d_preds_acwr_7_21_injury0_u19 = fit_and_pred(data_list = l_acwr_u19_training_only, FUN = fit_glmer_injury0) %>% mutate(load_type = "ACWR 7:21")
+d_preds_acwr_7_21_u19 = fit_and_pred(data_list = l_acwr_u19, FUN = fit_glmer_injury_1_4) %>% mutate(load_type = "ACWR 7:21")
+d_preds_acwr_mp_u19 = fit_and_pred(data_list = l_acwr_mp_u19, FUN = fit_glmer_injury_nextmc) %>% mutate(load_type = "ACWR 1:3 Match periods")
+
+vec = d_sample_loads_handball$load
+d_preds_load_injury0_handball = fit_and_pred(data_list = l_handball_training_only) %>% mutate(load_type = "sRPE")
+d_preds_load_handball = fit_and_pred(data_list = l_handball, FUN = fit_glmer_injury_1_4) %>% mutate(load_type = "sRPE")
+vec = d_sample_acwr$load
+d_preds_acwr_7_21_injury0_handball = fit_and_pred(data_list = l_acwr_handball_training_only, FUN = fit_glmer_injury0) %>% mutate(load_type = "ACWR 7:21")
+d_preds_acwr_7_21_handball = fit_and_pred(data_list = l_acwr_handball, FUN = fit_glmer_injury_1_4) %>% mutate(load_type = "ACWR 7:21")
+d_preds_acwr_mp_handball = fit_and_pred(data_list = l_acwr_mp_handball, FUN = fit_glmer_injury_nextmc) %>% mutate(load_type = "ACWR 1:3 Match periods")
+
+# The last dataset does not have the same function as the others
+fit_glmer = function(data){
+  fit = glmer(injury ~ rcs(load, 3) + age + position  + (1|p_id), data = data, 
+              family = binomial(link = "logit"))
+  fit
+}
+
+fit_glmer_injury0 = function(data){
+  fit = glmer(injury0 ~ rcs(load, 3) + age + position  + (1|p_id), data = data, 
+              family = binomial(link = "logit"))
+  fit
+}
+
+fit_glmer_injury_1_4 = function(data){
+  fit = glmer(injury_1_4 ~ rcs(load, 3) + age + position + (1|p_id), data = data, 
+              family = binomial(link = "logit"))
+  fit
+}
+
+fit_glmer_injury_nextmc = function(data){
+  fit = glmer(injury_nextmc ~ rcs(load, 3) + age + position + (1|p_id), data = data, 
+              family = binomial(link = "logit"))
+  fit
+}
+
+predict_glmer = function(fit, data_clusters){
+  preds = ggpredict(
+    fit, "load [vec]", 
+    condition = c(age = 17.2, position = "Striker", p_id = 100),
+    vcov.fun = "vcovCR", 
+    vcov.type = "CR0", 
+    vcov.args = list(p_id = data_clusters$p_id),
+    type = "re.zi") %>% as.tibble()
+  preds
+}
+
+vec = d_sample_loads_strom$load
+d_preds_load_injury0_strom = fit_and_pred(data_list = l_strom_training_only) %>% mutate(load_type = "sRPE")
+d_preds_load_strom = fit_and_pred(data_list = l_strom, FUN = fit_glmer_injury_1_4) %>% mutate(load_type = "sRPE")
+vec = d_sample_acwr_strom$load
+d_preds_acwr_7_21_injury0_strom = fit_and_pred(data_list = l_acwr_strom_training_only, FUN = fit_glmer_injury0) %>% mutate(load_type = "ACWR 7:21")
+d_preds_acwr_7_21_strom = fit_and_pred(data_list = l_acwr_strom, FUN = fit_glmer_injury_1_4) %>% mutate(load_type = "ACWR 7:21")
+d_preds_acwr_mp_strom = fit_and_pred(data_list = l_acwr_mp_strom, FUN = fit_glmer_injury_nextmc) %>% mutate(load_type = "ACWR 1:3 Match periods")
+
+# combine football and handball datasets
+d_preds_u19 = bind_rows(d_preds_load_u19, d_preds_acwr_7_21_u19, d_preds_acwr_mp_u19) %>% mutate(pop = "Football U-19")
+d_preds_handball = bind_rows(d_preds_load_handball, d_preds_acwr_7_21_handball, d_preds_acwr_mp_handball) %>% mutate(pop = "Handball")
+d_preds_strom = bind_rows(d_preds_load_strom, d_preds_acwr_7_21_strom, d_preds_acwr_mp_strom) %>% mutate(pop = "Football Elite")
+d_preds = bind_rows(d_preds_u19, d_preds_handball, d_preds_strom)
+
+d_preds_injury0_u19 = bind_rows(d_preds_load_injury0_u19, d_preds_acwr_7_21_injury0_u19) %>% mutate(pop = "Football U-19")
+d_preds_injury0_handball = bind_rows(d_preds_load_injury0_handball, d_preds_acwr_7_21_injury0_handball) %>% mutate(pop = "Handball")
+d_preds_injury0_strom = bind_rows(d_preds_load_injury0_strom, d_preds_acwr_7_21_injury0_strom) %>% mutate(pop = "Football Elite")
+d_preds_injury0 = bind_rows(d_preds_injury0_u19, d_preds_injury0_handball, d_preds_injury0_strom)
+
+#--------------------------Figure with significant models only
+
+d_preds_load_injury0_handball = d_preds_load_injury0_handball %>% mutate(injury = "A    Same Day (472 Injuries)")
+d_preds_load_handball = d_preds_load_handball %>% mutate(injury = "B    Next 4 Days (1 136 Injuries)")
+
+d_preds_load_injury0_handball_linear = d_preds_load_injury0_handball_linear %>% mutate(injury = "A    Same Day (472 Injuries)")
+d_preds_load_handball_linear = d_preds_load_handball_linear %>% mutate(injury = "B    Next 4 Days (1 136 Injuries)")
+
+d_preds_sig = bind_rows(d_preds_load_injury0_handball, d_preds_load_handball) 
+d_preds_sig_lin = bind_rows(d_preds_load_injury0_handball_linear, d_preds_load_handball_linear)
+
+# for bjsm green color
+ostrc_yellow = "#FF9900"
+text_size = 22
+nih_darkblue = "#001137"
+
+ggplot(d_preds_sig, aes(x = load, y = yhat)) +
+  facet_wrap(~injury, ncol = 1, scales = "free") +
+  geom_line(size = 1) + 
+  geom_line(data = d_preds_sig_lin, aes(x = load_values, y = yhat)) + 
+  geom_ribbon(aes(min = lower, max = upper), alpha = 0.25, fill = ostrc_yellow) +
+  theme_line(text_size) + 
+  ylab("Probability of Injury") +
+  xlab("sRPE (AU)")  +
+  scale_y_continuous(limits = c(0, 1.0)) +
+  theme(axis.title.y = element_text(angle = 90),
+        panel.border = element_blank(), 
+        panel.background = element_blank(),
+        panel.grid = element_blank(),
+        axis.line = element_line(color = nih_darkblue),
+        strip.background = element_blank(),
+        strip.text.x = element_text(size = text_size+2, family="Trebuchet MS", colour="black", face = "bold", hjust = -0.01),
+        axis.ticks = element_line(color = nih_darkblue))
 
 
 #------------------------Figures with all results (also flat results) for appendix
-# renaming labels to be consistent with terms in the article
-d_preds_full = d_preds %>% filter(pop == "Football U-19" & load_values <= 2000 | pop == "Handball" | pop == "Football Elite")
+
+# there are so few values to go on beyond 2000 that the confidence intervals are incredibly broad
+d_preds_full = d_preds %>% filter(pop == "Football U-19" & load <= 2000 | pop == "Handball" | pop == "Football Elite")
 d_preds_full = d_preds_full %>% mutate(load_type = case_when(load_type == "ACWR 1:3 Match periods" ~ "Micro-cycle ACWR 1:3",
                                                              load_type == "ACWR 7:21" ~ "Daily ACWR 7:21",
                                                              TRUE ~ load_type))
+
+d_preds_full %>% filter(pop == "Football U-19" & load_type == "Daily ACWR 7:21")
+d_preds_linear_full %>% filter(pop == "Football U-19" & load_type == "Daily ACWR 7:21")
+
+
+
 
 d_preds_linear_full = d_preds_linear %>% filter(pop == "Football U-19" & load_values <= 2000 | pop == "Handball" | pop == "Football Elite")
 d_preds_linear_full = d_preds_linear_full %>% mutate(load_type = case_when(load_type == "ACWR 1:3 Match periods" ~ "Micro-cycle ACWR 1:3",
                                                                            load_type == "ACWR 7:21" ~ "Daily ACWR 7:21",
                                                                            TRUE ~ load_type))
 
-d_preds_injury0_full = d_preds_injury0 %>% filter(pop == "Football U-19" & load_values <= 2000 | pop == "Handball" | pop == "Football Elite")
+d_preds_injury0_full = d_preds_injury0 %>% filter(pop == "Football U-19" & load <= 2000 | pop == "Handball" | pop == "Football Elite")
 d_preds_injury0_full= d_preds_injury0_full %>% mutate(load_type = case_when(load_type == "ACWR 1:3 Match periods" ~ "Micro-cycle ACWR 1:3",
                                                                             load_type == "ACWR 7:21" ~ "Daily ACWR 7:21",
                                                                             TRUE ~ load_type))
@@ -654,68 +807,41 @@ d_preds_injury0_linear_full= d_preds_injury0_linear_full %>% mutate(load_type = 
                                                                                           load_type == "ACWR 7:21" ~ "Daily ACWR 7:21",
                                                                                           TRUE ~ load_type))
 
-# note that the figures won't be reproduced with the same colors 
-# and theme, but the results are the same
-# (the theme used for the article were from self-made R theme functions)
-text_size = 12
-ostrc_yellow = "#FF9900"
-d_preds_full = d_preds %>% filter(pop == "Football U19" & load_values <= 2000 | pop == "Handball" | pop == "Football\nStrømsgodset")
-d_preds_linear_full = d_preds_linear %>% filter(pop == "Football U19" & load_values <= 2000 | pop == "Handball" | pop == "Football\nStrømsgodset")
-ggplot(d_preds_full, aes(x = load_values, y = yhat)) +
+text_size = 16
+ggplot(d_preds_full, aes(x = load, y = yhat)) +
   facet_wrap(vars(load_type, pop), scales = "free", ncol = 3) +
   geom_line(size = 1) + 
   geom_line(data = d_preds_linear_full, aes(x = load_values, y = yhat)) + 
   geom_ribbon(aes(min = lower, max = upper), alpha = 0.25, fill = ostrc_yellow) +
-  ylab("Probability of injury\Next 4 days or\nNext Microcycle") +
+  theme_line(text_size) + 
+  ylab("Probability of injury next 4 days or next micro-cycle") +
   xlab("Load value")  +
-  scale_y_continuous(limits = c(0, 1.0)) +
-  theme(axis.text = element_text(size=text_size),
-        strip.text.x = element_text(size = text_size),
-        axis.title =  element_text(size=text_size),
-        legend.position = "bottom",
-        legend.title = element_blank())
+  scale_y_continuous(limits = c(0, 1.0))  +
+  theme(axis.title.y = element_text(angle = 90),
+        panel.border = element_blank(), 
+        panel.background = element_blank(),
+        panel.grid = element_blank(),
+        axis.line = element_line(color = nih_darkblue),
+        strip.background = element_blank(),
+        strip.text.x = element_text(size = text_size, family="Trebuchet MS", colour="black", face = "bold", hjust = -0.01),
+        axis.ticks = element_line(color = nih_darkblue))
 
-d_preds_injury0_full = d_preds_injury0 %>% filter(pop == "Football U19" & load_values <= 2000 | pop == "Handball" | pop == "Football\nStrømsgodset")
-d_preds_injury0_linear_full = d_preds_injury0_linear %>% filter(pop == "Football U19" & load_values <= 2000 | pop == "Handball" | pop == "Football\nStrømsgodset")
-ggplot(d_preds_injury0_full, aes(x = load_values, y = yhat)) +
+
+
+ggplot(d_preds_injury0_full, aes(x = load, y = yhat)) +
   facet_wrap(vars(load_type, pop), scales = "free", ncol = 3) +
   geom_line(size = 1) + 
   geom_line(data = d_preds_injury0_linear_full, aes(x = load_values, y = yhat)) + 
   geom_ribbon(aes(min = lower, max = upper), alpha = 0.25, fill = ostrc_yellow) +
-  ylab("Probability of injury\non same day") +
+  theme_line(text_size) + 
+  ylab("Probability of injury on same day") +
   xlab("Load value")  +
-  scale_y_continuous(limits = c(0, 1.0))  +
-  theme(axis.text = element_text(size=text_size),
-        strip.text.x = element_text(size = text_size),
-        axis.title =  element_text(size=text_size),
-        legend.position = "bottom",
-        legend.title = element_blank())
-
-#------------------------- Figure made for article with handball only
-d_preds_load_injury0_handball = d_preds_load_injury0_handball %>% mutate(injury = "(A) Same Day (472 Injuries)")
-d_preds_load_handball = d_preds_load_handball %>% mutate(injury = "(B) Next 4 Days (1 136 Injuries)")
-
-d_preds_load_injury0_handball_linear = d_preds_load_injury0_handball_linear %>% mutate(injury = "(A) Same Day (472 Injuries)")
-d_preds_load_handball_linear = d_preds_load_handball_linear %>% mutate(injury = "(B) Next 4 Days (1 136 Injuries)")
-
-d_preds_sig = bind_rows(d_preds_load_injury0_handball, d_preds_load_handball) 
-d_preds_sig_lin = bind_rows(d_preds_load_injury0_handball_linear, d_preds_load_handball_linear)
-
-# note that the figures won't be reproduced with the same colors 
-# and theme, but the results are the same
-# (the theme used for the article were from self-made R theme functions)
-text_size = 12
-# there are so few values to go on beyond 2000 that the confidence intervals are incredibly broad
-ggplot(d_preds_sig, aes(x = load_values, y = yhat)) +
-  facet_wrap(~injury, ncol = 2) +
-  geom_line(size = 1) + 
-  geom_line(data = d_preds_sig_lin, aes(x = load_values, y = yhat)) + 
-  geom_ribbon(aes(min = lower, max = upper), alpha = 0.25, fill = ostrc_yellow) +
-  ylab("Probability\nof Injury") +
-  xlab("sRPE (AU)")  +
   scale_y_continuous(limits = c(0, 1.0)) +
-  theme(axis.text = element_text(size=text_size),
-        strip.text.x = element_text(size = text_size),
-        axis.title =  element_text(size=text_size),
-        legend.position = "bottom",
-        legend.title = element_blank())
+  theme(axis.title.y = element_text(angle = 90),
+        panel.border = element_blank(), 
+        panel.background = element_blank(),
+        panel.grid = element_blank(),
+        axis.line = element_line(color = nih_darkblue),
+        strip.background = element_blank(),
+        strip.text.x = element_text(size = text_size, family="Trebuchet MS", colour="black", face = "bold", hjust = -0.01),
+        axis.ticks = element_line(color = nih_darkblue))
